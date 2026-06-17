@@ -16,7 +16,7 @@ Le pont entre les trois : le **`campaign_id`**. SSoT strict — Lemlist porte la
 
 - `skills/prospect-routine/` — le **routeur** (déclenchement langage naturel + dispatch d'intention).
 - `scripts/routine.py` — le **moteur** déterministe : seul point d'IO Lemlist + état, modèle de livraison « charger puis lancer ». Zéro LLM.
-- `workflows/*.workflow.js` — les **workflows** : création de campagne (W1), setup Lemlist (W2), sourcing (W3), graders d'éval.
+- `workflows/*.workflow.js` — les **workflows** (fan-out d'agents) : création de campagne (W1), sourcing (W3), graders d'éval. Le runtime des workflows est sandboxé (pas de `require`/`import`) : leur logique déterministe vit dans `workflows/lib/*-core.js` (helpers purs + orchestration, testés par `node --test`), et le `.workflow.js` self-contained en est **généré** sous garde de synchronisation. (W2 lemlist-setup est une procédure déterministe du routeur, pas un workflow.)
 - `agents/` — sous-agents sourcing / scoring / juge (à venir).
 - `hooks/` — hook `SessionStart` qui synchronise les workflows vers `~/.claude/workflows/`.
 - `docs/` — design, architecture, specs.

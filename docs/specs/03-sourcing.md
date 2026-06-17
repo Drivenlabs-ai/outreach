@@ -1,6 +1,6 @@
 ---
 spec: 03 — W3 sourcing (le run quotidien)
-statut: à valider — People DB vérifié doc Lemlist 2026-06-15
+statut: moteur `source` + workflow livrés et testés (TDD) — 2026-06-17
 date: 2026-06-15
 dépend de: docs/specs/01-routine-engine.md, docs/specs/02-lemlist-setup.md
 ---
@@ -84,6 +84,37 @@ return { approuves: [...approuves, ...regen.passes] }
   régénération → sinon écarté.
 - Filet déterministe résiduel : `is_clean_message` (moteur) au load, dernier rempart.
 
+### 3.1 Contrat args/return (interface routeur ↔ workflow) — livré
+
+Le routeur source en déterministe (moteur `source`), puis invoque le workflow avec :
+
+```jsonc
+args = {
+  "candidats": [ { "linkedinUrl", "fullName", "jobTitle", "companyName",
+                   "location", "summary", "headline", "people_db_id" } ],
+  "prompts": { "icpFit": "…template interpolable…",
+               "messages": { "icebreaker": "…", "followup": "…", "closing": "…" } },
+  "sequence_keys": ["icebreaker","followup","closing"],   // = engine verify.required_variables
+  "models": { "scoring": "haiku", "writing": "sonnet", "judge": "sonnet" },   // défauts montrés
+  "enrich": { "enabled": false, "directive": "…", "store": "variable:contexte", "model": "sonnet" },
+  "review": { "max_words": 75 }, "review_batch_size": 8                        // optionnels
+}
+```
+
+Rendu : `{ "approuves": [ { "lead", "variables": { <sequence_keys…>, "contexte?" } } ] }` —
+exactement la forme consommée par `load-lead --input`. Après le workflow, le routeur enchaîne
+(déterministe, moteur) : `verify` (contrat) → `load-lead` (review) → `record-run` (seen += tous
+les sourcés, même les écartés au score) → `log`. Le launch reste manuel.
+
+### 3.2 Frontière self-contained ↔ logique testée
+
+Un `.workflow.js` exécuté par l'outil Workflow est **sandboxé** : pas de `require`/`import`, pas de
+`Date.now()`/`Math.random()`. Le workflow doit donc être un seul fichier autonome. Pour garder une
+logique **testée** : la source de vérité déterministe vit dans `workflows/lib/sourcing-core.js`
+(helpers purs + `runSourcing(env)`, testés par `node --test`) ; `workflows/sourcing.workflow.js` est
+**généré** depuis ce core par `workflows/lib/build-workflow.js` (self-contained), et un test garde
+l'égalité octet-pour-octet (`tests/js/sourcing-workflow-sync.test.js`). On édite le core, on régénère.
+
 ## 3bis. Enrichissement — étape optionnelle, gardée par config
 
 Certaines verticales ont besoin de **contexte que Lemlist ne donne pas** (ex. « cette personne est-elle
@@ -130,8 +161,11 @@ minimalement câblée ; le câblage fin (résolution slug, dry-run, enchaînemen
 - Engine `source` : pagination, exclusion des déjà-vus, arrêt à `target` / quota bas / épuisement,
   projection des résultats (mock `search_people`).
 - `lemlist.search_people` : route `POST /database/people`, body filtres/pagination.
-- Workflow : testé via ses parties déterministes (filtrage `drafts`, `split` approuvés/rejetés) +
-  un run mocké des agents (schéma respecté). Les agents eux-mêmes ne sont pas unit-testés (LLM).
+- Workflow : testé via ses parties déterministes (filtrage `drafts`, `split` approuvés/rejetés,
+  interpolation des prompts) + un run mocké de `runSourcing` (agents `pipeline`/`parallel` injectés,
+  schéma respecté). Les agents eux-mêmes ne sont pas unit-testés (LLM). Cf. `tests/js/sourcing-core.test.js`
+  (helpers + run mocké) et `tests/js/sourcing-workflow-sync.test.js` (workflow généré == core).
+  Lancement JS : `node --test 'tests/js/**/*.test.js'` (ou `npm run test:js`).
 
 ## 8. Hors-scope (specs suivantes)
 
