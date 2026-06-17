@@ -12,4 +12,31 @@ function interpolate(template, data) {
   });
 }
 
-module.exports = { interpolate };
+// ---- schemas (structured agent outputs) ----
+
+const VERDICT_SCHEMA = {
+  type: "object", additionalProperties: false,
+  properties: {
+    qualifie: { type: "boolean", description: "Le prospect correspond-il à l'ICP ?" },
+    raison: { type: "string", description: "Justification courte ancrée sur les faits du prospect." },
+  },
+  required: ["qualifie", "raison"],
+};
+
+// ---- lead identity + prompt assembly ----
+
+const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "location", "headline", "summary", "linkedinUrl"];
+
+function leadId(lead) { return (lead && (lead.linkedinUrl || lead.people_db_id)) || ""; }
+function leadLabel(lead) { return (lead && lead.fullName) || leadId(lead); }
+
+function prospectBlock(lead) {
+  const lines = PROSPECT_FIELDS.filter((k) => lead && lead[k]).map((k) => `- ${k}: ${lead[k]}`);
+  return `## Prospect à évaluer\n${lines.join("\n")}`;
+}
+
+function buildScorePrompt(icpFitTemplate, lead) {
+  return `${interpolate(icpFitTemplate, lead)}\n\n${prospectBlock(lead)}`;
+}
+
+module.exports = { interpolate, VERDICT_SCHEMA, leadId, leadLabel, buildScorePrompt };
