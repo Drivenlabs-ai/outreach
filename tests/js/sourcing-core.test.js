@@ -88,3 +88,30 @@ test("buildEnrichPrompt carries the directive and the prospect", () => {
   assert.match(out, /Vérifie si cliente de X/);
   assert.match(out, /Marie Roy/);
 });
+
+// ---------------------------------------------------------------------------
+// review (GATE 2 boolean rubric, by batch)
+// ---------------------------------------------------------------------------
+
+test("reviewSchema declares the boolean rubric per verdict", () => {
+  const item = core.reviewSchema().properties.verdicts.items;
+  for (const k of ["id", "no_fabrication", "angle_coherent", "within_length", "no_banned_phrases", "vouvoiement", "pass"]) {
+    assert.ok(item.required.includes(k), `missing ${k}`);
+  }
+});
+
+test("buildReviewPrompt lists each draft, its messages and the rubric", () => {
+  const out = core.buildReviewPrompt({
+    batch: [
+      { id: "https://lk/a", lead: { fullName: "Marie Roy" }, messages: { icebreaker: "Bonjour..." } },
+      { id: "https://lk/b", lead: { fullName: "Jean Sol" }, messages: { icebreaker: "Salut..." } },
+    ],
+    sequenceKeys: ["icebreaker"], maxWords: 75,
+  });
+  assert.match(out, /https:\/\/lk\/a/);
+  assert.match(out, /https:\/\/lk\/b/);
+  assert.match(out, /Marie Roy/);
+  assert.match(out, /75/);
+  assert.match(out, /vouvoiement/i);
+  assert.match(out, /pass/i);
+});
