@@ -141,8 +141,54 @@ function buildReviewPrompt({ batch, sequenceKeys, maxWords }) {
   return `Tu es juge qualité outbound. Longueur cible : ≤ ${maxWords} mots par message.\n\n${REVIEW_RUBRIC}\n\n## Leads à juger\n${cards}\n\nRends { "verdicts": [ … ] } avec un verdict par lead id ci-dessus.`;
 }
 
+// ---- pure post-processing ----
+
+function filterDrafts(written) {
+  return (written || []).filter((d) => d && d.messages && typeof d.messages === "object" && Object.keys(d.messages).length > 0);
+}
+
+function splitVerdicts(drafts, verdicts) {
+  const byId = new Map();
+  for (const v of verdicts || []) if (v && v.id != null) byId.set(String(v.id), v);
+  const approuves = [], aRejeter = [];
+  for (const d of drafts) {
+    const v = byId.get(String(d.id));
+    if (v && v.pass) approuves.push({ ...d, verdict: v });
+    else aRejeter.push({ ...d, verdict: v || { pass: false, notes: "no_verdict" } });
+  }
+  return { approuves, aRejeter };
+}
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+function parseStoreKey(store) {
+  if (typeof store !== "string") return null;
+  const m = store.match(/^variable:(.+)$/);
+  return m ? m[1].trim() : null;
+}
+
+function contextValue(context) {
+  if (context == null) return null;
+  if (typeof context === "string") return context;
+  return context.summary || JSON.stringify(context);
+}
+
+function buildApproved(draft, storeKey) {
+  const variables = { ...draft.messages };
+  if (storeKey) {
+    const v = contextValue(draft.context);
+    if (v != null && v !== "") variables[storeKey] = v;
+  }
+  return { lead: draft.lead, variables };
+}
+
 module.exports = {
   interpolate, VERDICT_SCHEMA, leadId, leadLabel, buildScorePrompt,
   ENRICH_SCHEMA, buildEnrichPrompt, messagesSchema, buildWritePrompt,
   reviewSchema, buildReviewPrompt,
+  filterDrafts, splitVerdicts, chunk, parseStoreKey, buildApproved,
 };

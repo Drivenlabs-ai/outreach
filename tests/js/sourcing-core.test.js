@@ -115,3 +115,39 @@ test("buildReviewPrompt lists each draft, its messages and the rubric", () => {
   assert.match(out, /vouvoiement/i);
   assert.match(out, /pass/i);
 });
+
+// ---------------------------------------------------------------------------
+// pure post-processing: filter / split / chunk / approve / store key
+// ---------------------------------------------------------------------------
+
+test("filterDrafts drops nulls and message-less entries", () => {
+  const out = core.filterDrafts([null, { messages: {} }, { messages: { icebreaker: "x" } }, undefined]);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].messages.icebreaker, "x");
+});
+
+test("splitVerdicts partitions by id and pass, defaulting missing verdicts to reject", () => {
+  const drafts = [{ id: "a", messages: {} }, { id: "b", messages: {} }, { id: "c", messages: {} }];
+  const verdicts = [{ id: "a", pass: true }, { id: "b", pass: false, notes: "trop long" }];
+  const { approuves, aRejeter } = core.splitVerdicts(drafts, verdicts);
+  assert.deepEqual(approuves.map((d) => d.id), ["a"]);
+  assert.deepEqual(aRejeter.map((d) => d.id), ["b", "c"]);
+  assert.equal(aRejeter.find((d) => d.id === "c").verdict.notes, "no_verdict");
+});
+
+test("chunk splits into batches", () => {
+  assert.deepEqual(core.chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+});
+
+test("parseStoreKey extracts the variable name", () => {
+  assert.equal(core.parseStoreKey("variable:contexte"), "contexte");
+  assert.equal(core.parseStoreKey("field:foo"), null);
+  assert.equal(core.parseStoreKey(undefined), null);
+});
+
+test("buildApproved shapes {lead, variables} and persists context to the store variable", () => {
+  const draft = { lead: { linkedinUrl: "https://lk/a" }, messages: { icebreaker: "x", closing: "y" }, context: { summary: "cliente de X" } };
+  assert.deepEqual(core.buildApproved(draft, "contexte"),
+    { lead: { linkedinUrl: "https://lk/a" }, variables: { icebreaker: "x", closing: "y", contexte: "cliente de X" } });
+  assert.deepEqual(core.buildApproved({ lead: {}, messages: { icebreaker: "x" } }, null).variables, { icebreaker: "x" });
+});
