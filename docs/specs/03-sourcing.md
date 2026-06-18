@@ -64,7 +64,7 @@ de campagne). Lecture du `limitation` = respect du quota natif (pas de throttle 
 ```js
 export const meta = { name, description, phases: ["score","write","review"] }
 
-// args = { candidats, prompts:{icpFit, messages:{...}}, sequence_keys }
+// args = { candidats, prompts:{icpFit, <step>:…}, sequence_keys }   // prompts plat = sortie engine `prepare`
 const written = await pipeline(args.candidats,
   c  => agent(icpFitPrompt(c), { schema: VERDICT, model: "haiku", phase: "score" }),
   (v, c) => v.qualifie ? agent(writePrompt(c, args.prompts), { schema: MESSAGES, model: "sonnet", phase: "write" }) : null
@@ -92,11 +92,12 @@ Le routeur source en déterministe (moteur `source`), puis invoque le workflow a
 args = {
   "candidats": [ { "linkedinUrl", "fullName", "jobTitle", "companyName",
                    "location", "summary", "headline", "people_db_id" } ],
-  "prompts": { "icpFit": "…template interpolable…",
-               "messages": { "icebreaker": "…", "followup": "…", "closing": "…" } },
+  "prompts": { "icpFit": "…template interpolable…",          // dict PLAT (= sortie engine `prepare`) :
+               "icebreaker": "…", "followup": "…", "closing": "…" },  //   icpFit + 1 prompt par étape
   "sequence_keys": ["icebreaker","followup","closing"],   // = engine verify.required_variables
   "models": { "scoring": "haiku", "writing": "sonnet", "judge": "sonnet" },   // défauts montrés
-  "enrich": { "enabled": false, "directive": "…", "store": "variable:contexte", "model": "sonnet" },
+  "enrich": { "enabled": false, "directive": "…", "store": "variable:contexte",
+              "model": "sonnet", "agent_type": "general-purpose" },   // enrich = seul agent à outils web
   "review": { "max_words": 75 }, "review_batch_size": 8                        // optionnels
 }
 ```

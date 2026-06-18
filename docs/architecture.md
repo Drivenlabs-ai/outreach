@@ -47,11 +47,14 @@ Code/drivenlabs-ai/prospect-routine/                # plugin (repo git, source d
 ├── scripts/
 │   ├── routine.py                                  # moteur — sous-commandes atomiques (cf. §5)
 │   └── sync-workflows.sh                            # copie workflows → ~/.claude/workflows/
-├── workflows/                                       # source versionnée des workflows
-│   ├── sourcing.workflow.js                        # W3 (ex daily.workflow.js, refactoré)
-│   ├── lemlist-setup.workflow.js                   # W2
-│   ├── new-campaign.workflow.js                    # W1 phase 2 (autonome)
-│   └── eval.workflow.js                            # harnais graders
+├── workflows/                                       # source versionnée des workflows (fan-out d'agents)
+│   ├── sourcing.workflow.js                        # W3 — GÉNÉRÉ depuis lib/sourcing-core.js
+│   ├── new-campaign.workflow.js                    # W1 phase 2 (autonome) — à venir
+│   ├── eval.workflow.js                            # harnais graders — à venir
+│   └── lib/                                         # logique déterministe testée + générateur
+│       ├── sourcing-core.js                        # helpers purs + runSourcing (node --test)
+│       └── build-workflow.js                       # génère le .workflow.js self-contained
+│   # (W2 lemlist-setup = procédure déterministe du routeur, pas un .workflow.js — cf. spec 02)
 ├── agents/                                          # sourcing / scoring / juge (à venir)
 ├── hooks/hooks.json                                # SessionStart → sync-workflows.sh
 ├── references/

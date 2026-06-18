@@ -19,7 +19,10 @@ const META = {
 
 function buildWorkflowSource() {
   const core = fs.readFileSync(path.join(__dirname, "sourcing-core.js"), "utf8");
-  const body = core.replace(/\nmodule\.exports[\s\S]*$/, "\n").trimEnd();
+  const body = core
+    .replace(/^"use strict";\n/, "")            // no-op once wrapped; strip so it doesn't land mid-body
+    .replace(/\nmodule\.exports[\s\S]*$/, "\n")  // drop the CommonJS export tail
+    .trimEnd();
   return [
     "// GENERATED from workflows/lib/sourcing-core.js — do not edit by hand.",
     "// Regenerate: node workflows/lib/build-workflow.js   (guarded by tests/js/sourcing-workflow-sync.test.js)",

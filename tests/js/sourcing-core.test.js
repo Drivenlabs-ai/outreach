@@ -152,6 +152,25 @@ test("buildApproved shapes {lead, variables} and persists context to the store v
   assert.deepEqual(core.buildApproved({ lead: {}, messages: { icebreaker: "x" } }, null).variables, { icebreaker: "x" });
 });
 
+test("draftId falls back to a row index when the lead has no identifier", () => {
+  assert.equal(core.draftId({ linkedinUrl: "https://lk/a" }, 3), "https://lk/a");
+  assert.equal(core.draftId({ people_db_id: "p1" }, 3), "p1");
+  assert.equal(core.draftId({}, 3), "row:3");
+});
+
+test("buildApproved sanitizes the context so is_clean_message never drops the lead", () => {
+  // em/en dashes and over-length would be rejected by the engine's is_clean_message net.
+  const dashed = core.buildApproved({ lead: {}, messages: { icebreaker: "x" }, context: { summary: "cliente — de X" } }, "contexte");
+  assert.equal(dashed.variables.contexte, "cliente - de X");
+  const long = core.buildApproved({ lead: {}, messages: { icebreaker: "x" }, context: { summary: "mot ".repeat(200).trim() } }, "contexte");
+  assert.ok(long.variables.contexte.split(/\s+/).length <= 150);
+});
+
+test("buildApproved stores no context variable when the summary is empty", () => {
+  const out = core.buildApproved({ lead: {}, messages: { icebreaker: "x" }, context: { summary: "" } }, "contexte");
+  assert.deepEqual(out.variables, { icebreaker: "x" });
+});
+
 // ---------------------------------------------------------------------------
 // runSourcing — orchestration validated by a mocked run (no real LLM)
 // ---------------------------------------------------------------------------
@@ -170,7 +189,7 @@ async function fakeParallel(thunks) {
 function makeEnv(args, agentImpl, spy) {
   return {
     args, pipeline: fakePipeline, parallel: fakeParallel, phase: () => {}, log: () => {},
-    agent: async (prompt, opts) => { if (spy) spy.push({ phase: opts.phase, prompt }); return agentImpl(prompt, opts); },
+    agent: async (prompt, opts) => { if (spy) spy.push({ phase: opts.phase, prompt, opts }); return agentImpl(prompt, opts); },
   };
 }
 const baseArgs = {
@@ -178,7 +197,7 @@ const baseArgs = {
     { linkedinUrl: "https://lk/a", fullName: "A Qual", jobTitle: "Gérant" },
     { linkedinUrl: "https://lk/b", fullName: "B NoQual", jobTitle: "Stagiaire" },
   ],
-  prompts: { icpFit: "score {{jobTitle}}", messages: { icebreaker: "P-ice", closing: "P-clo" } },
+  prompts: { icpFit: "score {{jobTitle}}", icebreaker: "P-ice", closing: "P-clo" },
   sequence_keys: ["icebreaker", "closing"],
 };
 
@@ -195,6 +214,20 @@ test("runSourcing qualifies, writes, approves; drops non-qualified", async () =>
   assert.equal(out.approuves[0].lead.linkedinUrl, "https://lk/a");
   assert.deepEqual(Object.keys(out.approuves[0].variables), ["icebreaker", "closing"]);
   assert.ok(!spy.some((c) => c.phase === "enrich"));
+});
+
+test("runSourcing threads each per-step prompt from the flat prompts dict into write", async () => {
+  const spy = [];
+  const agentImpl = (prompt, opts) => {
+    if (opts.phase === "score") return { qualifie: true, raison: "x" };
+    if (opts.phase === "write") return { messages: { icebreaker: "i", closing: "c" } };
+    if (opts.phase === "review") return { verdicts: [{ id: "https://lk/a", pass: true }, { id: "https://lk/b", pass: true }] };
+    throw new Error("unexpected " + opts.phase);
+  };
+  await core.runSourcing(makeEnv(baseArgs, agentImpl, spy));
+  const writePrompt = spy.find((c) => c.phase === "write").prompt;
+  assert.match(writePrompt, /P-ice/);
+  assert.match(writePrompt, /P-clo/);
 });
 
 test("runSourcing pins models per spec (score=haiku, write=sonnet, review=sonnet)", async () => {
@@ -251,7 +284,9 @@ test("runSourcing runs enrich only when enabled and only for qualified, persisti
   };
   const args = { ...baseArgs, enrich: { enabled: true, directive: "vérifie X", store: "variable:contexte" } };
   const out = await core.runSourcing(makeEnv(args, agentImpl, spy));
-  assert.equal(spy.filter((c) => c.phase === "enrich").length, 1);
+  const enrichCalls = spy.filter((c) => c.phase === "enrich");
+  assert.equal(enrichCalls.length, 1);
+  assert.equal(enrichCalls[0].opts.agentType, "general-purpose"); // the only tool-using agent
   assert.equal(out.approuves[0].variables.contexte, "cliente de X");
 });
 

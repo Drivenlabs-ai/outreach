@@ -18,4 +18,6 @@ test("generated workflow is self-contained: no require/import, declares meta, ca
   assert.doesNotMatch(src, /module\.exports/);
   assert.match(src, /export const meta = /);
   assert.match(src, /return await runSourcing\(\{ agent, pipeline, parallel, phase, log, args \}\)/);
+  // the CommonJS "use strict" directive must be dropped (it would be a no-op mid-body once wrapped).
+  assert.doesNotMatch(src, /"use strict"/);
 });

@@ -29,6 +29,9 @@ const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "location", "hea
 
 function leadId(lead) { return (lead && (lead.linkedinUrl || lead.people_db_id)) || ""; }
 function leadLabel(lead) { return (lead && lead.fullName) || leadId(lead); }
+// Stable per-run key: a candidate without any identifier still gets a unique id,
+// so id-less leads never collide on "" when verdicts are matched in splitVerdicts.
+function draftId(lead, index) { return leadId(lead) || `row:${index}`; }
 
 function prospectBlock(lead) {
   const lines = PROSPECT_FIELDS.filter((k) => lead && lead[k]).map((k) => `- ${k}: ${lead[k]}`);
@@ -171,18 +174,23 @@ function parseStoreKey(store) {
   return m ? m[1].trim() : null;
 }
 
+// Keep the out-of-contract `contexte` loadable: neutralize what the engine's
+// is_clean_message net rejects (em/en dashes, > 150 words) so an enrich note is
+// never the reason a fully-processed lead is silently skipped at load.
+function sanitizeForVariable(text) {
+  const words = String(text == null ? "" : text).replace(/[—–]/g, "-").trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, 150).join(" ");
+}
+
 function contextValue(context) {
   if (context == null) return null;
-  if (typeof context === "string") return context;
-  return context.summary || JSON.stringify(context);
+  return sanitizeForVariable(typeof context === "string" ? context : context.summary) || null;
 }
 
 function buildApproved(draft, storeKey) {
   const variables = { ...draft.messages };
-  if (storeKey) {
-    const v = contextValue(draft.context);
-    if (v != null && v !== "") variables[storeKey] = v;
-  }
+  const v = storeKey && contextValue(draft.context);
+  if (v) variables[storeKey] = v;
   return { lead: draft.lead, variables };
 }
 
@@ -222,18 +230,18 @@ async function runSourcing(env) {
     candidats,
     (lead) => agent(buildScorePrompt(prompts.icpFit, lead),
       { schema: VERDICT_SCHEMA, model: scoreModel, phase: "score", label: `score:${leadLabel(lead)}` }),
-    async (verdict, lead) => {
+    async (verdict, lead, i) => {
       if (!verdict || !verdict.qualifie) return null;
       let context = null;
       if (enrich.enabled) {
         context = await agent(buildEnrichPrompt(enrich.directive, lead),
-          { schema: ENRICH_SCHEMA, model: enrich.model || judgeModel, phase: "enrich", label: `enrich:${leadLabel(lead)}` });
+          { schema: ENRICH_SCHEMA, model: enrich.model || judgeModel, agentType: enrich.agent_type || "general-purpose", phase: "enrich", label: `enrich:${leadLabel(lead)}` });
       }
-      return { id: leadId(lead), lead, context };
+      return { id: draftId(lead, i), lead, context };
     },
     async (acc, lead) => {
       if (!acc) return null;
-      const out = await agent(buildWritePrompt({ messagesPrompts: prompts.messages, sequenceKeys, lead, context: acc.context }),
+      const out = await agent(buildWritePrompt({ messagesPrompts: prompts, sequenceKeys, lead, context: acc.context }),
         { schema: MSG_SCHEMA, model: writeModel, phase: "write", label: `write:${leadLabel(lead)}` });
       return { ...acc, messages: out && out.messages };
     },
@@ -249,7 +257,7 @@ async function runSourcing(env) {
   let regenPass = [];
   if (aRejeter.length) {
     const regen = await env.parallel(aRejeter.map((d) => async () => {
-      const out = await agent(buildWritePrompt({ messagesPrompts: prompts.messages, sequenceKeys, lead: d.lead, context: d.context, feedback: d.verdict }),
+      const out = await agent(buildWritePrompt({ messagesPrompts: prompts, sequenceKeys, lead: d.lead, context: d.context, feedback: d.verdict }),
         { schema: MSG_SCHEMA, model: writeModel, phase: "write", label: `rewrite:${d.id}` });
       return out && out.messages ? { id: d.id, lead: d.lead, context: d.context, messages: out.messages } : null;
     }));
@@ -264,7 +272,7 @@ async function runSourcing(env) {
 }
 
 module.exports = {
-  interpolate, VERDICT_SCHEMA, leadId, leadLabel, buildScorePrompt,
+  interpolate, VERDICT_SCHEMA, leadId, leadLabel, draftId, buildScorePrompt,
   ENRICH_SCHEMA, buildEnrichPrompt, messagesSchema, buildWritePrompt,
   reviewSchema, buildReviewPrompt,
   filterDrafts, splitVerdicts, chunk, parseStoreKey, buildApproved,
