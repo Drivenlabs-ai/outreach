@@ -7,19 +7,17 @@ description: Déclencher quand l'utilisateur veut monter, créer ou lancer une c
 
 ## Vue d'ensemble
 
-Crée une verticale de prospection de bout en bout : **valide l'ICP et l'angle avec l'utilisateur
-(interactif), puis matérialise la campagne en autonomie** (fichiers d'intelligence → validation du
-prompt `icpFit` → campagne Lemlist → smoke test → prêt).
+Crée une verticale de prospection de bout en bout : valide l'ICP et l'angle avec l'utilisateur
+(interactif), puis matérialise la campagne en autonomie (fichiers d'intelligence → validation du prompt
+`icpFit` → campagne Lemlist → smoke test → prêt).
 
-**Principe** : toi (Claude de session) tu **orchestres des briques déjà construites et testées** — tu
-n'écris pas de code. Le moteur (`scripts/routine.py`) fait l'I/O Lemlist et l'état ; les workflows
-`icp-check` et `sourcing` portent le jugement IA ; `/lemlist` porte la craft (ICP, séquence, copy). Ton
-rôle : la conversation d'alignement, la rédaction des fichiers d'intelligence, et l'enchaînement des
-commandes.
+Principe : toi (Claude de session) tu orchestres des briques déjà construites et testées — tu n'écris pas
+de code. Le moteur (`scripts/routine.py`) fait l'I/O Lemlist et l'état ; les workflows `icp-check` et
+`sourcing` portent le jugement IA ; `/lemlist` porte la craft (ICP, séquence, copy). Ton rôle : la
+conversation d'alignement, la rédaction des fichiers d'intelligence, l'enchaînement des commandes.
 
-**Frontière dure** : la phase 1 est **interactive** (l'ICP/angle exige le jugement de l'utilisateur) ;
-la phase 2 est **autonome** mais s'arrête à deux gardes — avant toute **mutation Lemlist** et avant le
-**flip `dry_run`**.
+Frontière : la phase 1 est interactive (l'ICP/angle exige le jugement de l'utilisateur) ; la phase 2 est
+autonome mais s'arrête à deux gardes — avant toute mutation Lemlist et avant le flip `dry_run`.
 
 **Commandes moteur** : toujours via `uv run python scripts/routine.py <cmd>` (jamais `python3` direct) ;
 les étapes ci-dessous notent le `<cmd>` seul.
@@ -33,50 +31,49 @@ les étapes ci-dessous notent le `<cmd>` seul.
 ## Le flux
 
 ```
-Phase 1 (interactif) : recherche + Q&R → valide ICP + angle → GATE humain
+Phase 1 (interactif) : recherche + Q&R → valide ICP + angle → gate humain
 Phase 2 (autonome)   : fichiers d'intelligence → icp-check → W2 → smoke → flip dry_run
-                       ↑ s'arrête avant la 1re mutation Lemlist ET avant le flip
+                       ↑ s'arrête avant la 1re mutation Lemlist et avant le flip
 ```
 
 ## Phase 1 — Alignement ICP + angle (interactif)
 
-L'ICP et l'angle sont **le choix à fort levier** : s'ils sont faux, tout le reste part de travers. Ils
+L'ICP et l'angle sont le choix à fort levier : s'ils sont faux, tout le reste part de travers. Ils
 exigent le jugement de l'utilisateur — ne les devine pas.
 
 1. **Positioning transversal** : si `Prospection/icp-global.md` existe, lis-le (la verticale en hérite) ;
    retiens sa version pour `icp_global_version`.
 2. **Recherche** la verticale (web + craft `/lemlist` §1–2) : marché, déclencheurs (triggers), pains,
    qui décide.
-3. **Q&R structurée** — chaque arbitrage passe par **AskUserQuestion** (options pré-rédigées + reco).
-   Converge jusqu'à verrouiller :
+3. Q&R structurée — chaque arbitrage passe par AskUserQuestion (options pré-rédigées + reco). Converge
+   jusqu'à verrouiller :
    - **ICP** — segment précis, basé trigger/pain (pas une liste de critères mous). `/lemlist` §1.
    - **Persona** — le rôle ciblé (pas un département) + la séniorité (calibre la copy). `/lemlist` §2.
    - **Angle** — la thèse du message, le fil que l'icebreaker ouvre.
    - **Filtres People DB** — traduction de l'ICP en filtres de recherche (`filterId` / `in` / `out`).
      `/lemlist` §3.
-4. **GATE humain** — ne quitte pas la phase 1 tant que l'utilisateur n'a pas **validé explicitement
-   l'ICP + l'angle**.
+4. Gate humain — ne quitte pas la phase 1 tant que l'utilisateur n'a pas validé l'ICP + l'angle.
 5. **Acte** — crée le dossier d'état + le `campaign.json` draft (cf. Référence), puis marque l'étape :
    `status --config <campaign.json> --set phase1_done=true`.
 
 ## Phase 2 — Matérialisation (autonome, gardée)
 
-Tu pilotes ; tu peux faire des checkpoints avec l'utilisateur. Deux gardes dures : **§3 (avant la 1re
-mutation Lemlist)** et **§5 (avant le flip `dry_run`)**.
+Tu pilotes ; tu peux faire des checkpoints avec l'utilisateur. Deux gardes : avant la 1re mutation
+Lemlist (§3) et avant le flip `dry_run` (§5).
 
 ### 1. Écrire les fichiers d'intelligence
 
 Dans le dossier verticale (`Prospection/<Vertical>/`), guidé par la craft `/lemlist` + les sorties de
 la phase 1, rédige :
 - `icp.md` · `persona.md` · `pain-points.md` · `value-proposition.md` · `triggers.md`
-- `prompts/icpFit.md` (qualification) + un `prompts/<step>.md` par message de la séquence — les **noms de
-  fichiers = clés de variables** de la séquence (cf. Référence, contrat de variables). À ce stade la
+- `prompts/icpFit.md` (qualification) + un `prompts/<step>.md` par message de la séquence — les noms de
+  fichiers = clés de variables de la séquence (cf. Référence, contrat de variables). À ce stade la
   campagne n'existe pas encore : reprends les clés connues du template par défaut
   (`icebreaker` / `followup` / `closing`) ; `verify` (§3) réconcilie avec la séquence réelle.
 - `campaign.json` draft (forme en Référence ; `dry_run: true`, ids `null`).
 
-**Garde** : ne JAMAIS écraser un fichier existant sans confirmation. (Le hook `PostToolUse` lance `verify`
-à chaque écriture de fichier campagne — la dérive prompts ↔ séquence remonte immédiatement.)
+Garde : ne pas écraser un fichier d'intelligence existant sans confirmation. (Le hook `PostToolUse` lance
+`verify` à chaque écriture de fichier campagne — la dérive prompts ↔ séquence remonte aussitôt.)
 
 ### 2. icp-check — aligner le prompt icpFit
 
@@ -84,32 +81,36 @@ Boucle jusqu'à ce que le jugement Haiku colle à l'intention :
 1. `source --config <campaign.json> --target 15` → échantillon.
 2. Lance le workflow **icp-check** : `args = { prompt_icpFit: <contenu de prompts/icpFit.md>, sample:
    <candidats>, model: "haiku" }` — `sample` = le tableau `candidats` renvoyé par `source`.
-3. Lis les `verdicts`, compare chacun à l'ICP visé, repère les ratés → **édite `prompts/icpFit.md`** →
+3. Lis les `verdicts`, compare chacun à l'ICP visé, repère les ratés → édite `prompts/icpFit.md` →
    relance. Boucle jugée à la main, bornée (pas de seuil automatique, pas de boucle infinie).
-4. **Sign-off** : l'utilisateur valide l'alignement avant de continuer.
+4. Sign-off : l'utilisateur valide l'alignement avant de continuer.
 
 ### 3. W2 — créer la campagne Lemlist
 
-**GARDE : demande le go de l'utilisateur avant la 1re mutation Lemlist** (les étapes ci-dessous créent une
-vraie campagne + liste).
+**Garde : demande le go de l'utilisateur avant la 1re mutation Lemlist** — les étapes ci-dessous créent
+une vraie campagne + liste.
 
-**Reprise — lis l'état AVANT d'agir** : `status --config <campaign.json> --get w2_steps`. Saute toute
-étape déjà inscrite (ne re-duplique jamais). **Après chaque étape réussie, inscris-la toi-même** (aucune
-commande ne le fait automatiquement) : `status --config <campaign.json> --set w2_steps=<liste JSON à jour>`.
+Reprise : aucune commande moteur n'écrit `w2_steps`, c'est toi qui le tiens — c'est le seul garde-fou
+contre une re-duplication au re-run. Avant d'agir, lis-le (`status --config <campaign.json> --get
+w2_steps`) et saute toute étape déjà inscrite. Après chaque étape, ré-inscris la liste cumulée complète
+(`--set` remplace, il n'ajoute pas), entre guillemets pour qu'elle atteigne le shell intacte.
 
-1. Si `"campaign"` ∉ `w2_steps` : `duplicate-campaign --template-id <DEFAULT_FLOW_TEMPLATE_ID> --name
-   <verticale>` → relève `campaign_id` + `sequence_id` (stdout). Puis `status --set w2_steps=["campaign"]`.
-   `DEFAULT_FLOW_TEMPLATE_ID` : cf. Référence — **si tu ne l'as pas, demande-le à l'utilisateur** (ne
-   l'invente jamais).
-2. Si `"list"` ∉ `w2_steps` : `create-list --name <verticale>` → relève `list_id`. Puis `w2_steps` += `"list"`.
+1. `"campaign"` absent de `w2_steps` : `duplicate-campaign --template-id <DEFAULT_FLOW_TEMPLATE_ID> --name
+   <verticale>` → relève `campaign_id` + `sequence_id` (stdout) → `status --config <campaign.json> --set
+   'w2_steps=["campaign"]'`. `DEFAULT_FLOW_TEMPLATE_ID` vient de la Référence ; si tu ne l'as pas,
+   demande-le à l'utilisateur (ne l'invente jamais).
+2. `"list"` absent : `create-list --name <verticale>` → relève `list_id` → `status --config
+   <campaign.json> --set 'w2_steps=["campaign","list"]'`.
 3. `verify --campaign-id <campaign_id de l'étape 1> --prompts-dir <Prospection/<Vertical>/prompts>` → doit
    être `aligned` (zéro `missing_prompts`) ; sinon corrige les prompts et re-verify. (On passe
-   `--campaign-id`, **pas** `--config` : à ce stade le `campaign.json` n'a pas encore les ids.)
-4. Si `"register"` ∉ `w2_steps` : assemble le **contenu final** de `campaign.json` (le draft + `campaign_id`
-   et `list_id` des étapes 1–2), écris-le dans un fichier temporaire, et inscris l'entrée registre
-   (forme en Référence) dans un autre. Puis `register-campaign --registry <…/campaigns-registry.json>
-   --campaign-json <campaign.json> --data-file <fichier-campaign-final> --entry-file <fichier-entrée>`
-   (le `--data-file` est recopié tel quel dans `--campaign-json`). Puis `w2_steps` += `"register"`.
+   `--campaign-id` parce que le `campaign.json` n'a pas encore les ids à ce stade.)
+4. `"register"` absent : assemble le contenu final de `campaign.json` (le draft + `campaign_id` et
+   `list_id` des étapes 1–2) dans un fichier, et l'entrée registre (forme en Référence) dans un autre.
+   Puis `register-campaign --registry <racine Prospection/campaigns-registry.json — cf. Référence>
+   --campaign-json <campaign.json de la verticale> --data-file <fichier-campaign-final> --entry-file
+   <fichier-entrée>` → `status --config <campaign.json> --set 'w2_steps=["campaign","list","register"]'`.
+   Cette commande recopie `--data-file` dans `--campaign-json` : l'overwrite du `campaign.json` est ici la
+   promotion draft→final légitime, hors de la garde anti-écrasement (qui vise les fichiers d'intelligence).
 
 ### 4. Smoke test — 1 lead en review
 
@@ -121,17 +122,15 @@ commande ne le fait automatiquement) : `status --config <campaign.json> --set w2
 
 ### 5. Passer en prêt (flip dry_run)
 
-**GARDE DURE : ne flip `dry_run` à `false` que sur confirmation explicite de l'utilisateur.** Une fois
+**Garde dure : ne flip `dry_run` à `false` que sur confirmation explicite de l'utilisateur.** Une fois
 confirmé, mets `dry_run: false` dans `campaign.json`. La campagne est prête — le run quotidien (W3) peut
-tourner, et le **launch reste un geste séparé et gardé** (jamais en W1).
+tourner ; le launch reste un geste séparé et gardé, hors de W1.
 
 ## Robustesse & reprise
 
-- **Reprise = `status.w2_steps[]`, tenue à la main.** Aucune commande moteur ne l'écrit toute seule :
-  c'est TOI qui inscris chaque étape via `status --set` (cf. §3) et qui lis `status --get w2_steps` avant
-  d'agir. Sans cette discipline, un re-run **re-duplique la campagne** — c'est le seul garde-fou contre ça.
-- `phase1_done` marque la fin de la phase 1 (idem : posé par toi en Phase 1 §5).
-- **Jamais** d'overwrite de fichier local sans confirmation. **Jamais** de launch en W1.
+- Reprise : `status` porte `phase1_done` (Phase 1 §5) et `w2_steps[]` (§3) ; lus avant chaque phase, ils
+  font sauter ce qui est déjà fait.
+- Garde anti-écrasement des fichiers d'intelligence : §1. Pas de launch dans W1 : §5.
 
 ## Référence
 
