@@ -1,6 +1,6 @@
 ---
 name: new-campaign
-description: Crée une nouvelle campagne de prospection outbound pour une verticale dans le plugin prospect-routine. Déclencher quand l'utilisateur veut monter, créer ou lancer une campagne pour un segment ("crée une campagne pour les agences immo", "nouvelle verticale X", "monte une prospection pour Y", "setup outbound pour Z", "on attaque le marché des cabinets dentaires"), ou démarrer une campagne Lemlist multicanale de zéro. Ne pas déclencher pour faire tourner (sourcing quotidien) ou modifier une campagne existante.
+description: Déclencher quand l'utilisateur veut monter, créer ou lancer une campagne de prospection outbound pour une nouvelle verticale ou un segment ("crée une campagne pour les agences immo", "nouvelle verticale X", "monte une prospection pour Y", "setup outbound pour Z", "on attaque le marché des cabinets dentaires"), ou démarrer une campagne Lemlist multicanale de zéro. Ne pas déclencher pour faire tourner le sourcing quotidien d'une campagne existante (run/W3) ni pour modifier une campagne déjà créée.
 ---
 
 # new-campaign (W1) — créer une campagne pour une verticale
@@ -67,7 +67,9 @@ Dans le dossier verticale (`Prospection/<Vertical>/`), guidé par la craft `/lem
 la phase 1, rédige :
 - `icp.md` · `persona.md` · `pain-points.md` · `value-proposition.md` · `triggers.md`
 - `prompts/icpFit.md` (qualification) + un `prompts/<step>.md` par message de la séquence — les **noms de
-  fichiers = clés de variables** de la séquence (cf. Référence, contrat de variables).
+  fichiers = clés de variables** de la séquence (cf. Référence, contrat de variables). À ce stade la
+  campagne n'existe pas encore : reprends les clés connues du template par défaut
+  (`icebreaker` / `followup` / `closing`) ; `verify` (§3) réconcilie avec la séquence réelle.
 - `campaign.json` draft (forme en Référence ; `dry_run: true`, ids `null`).
 
 **Garde** : ne JAMAIS écraser un fichier existant sans confirmation. (Le hook `PostToolUse` lance `verify`
@@ -78,7 +80,7 @@ la phase 1, rédige :
 Boucle jusqu'à ce que le jugement Haiku colle à l'intention :
 1. `python3 scripts/routine.py source --config <campaign.json> --target 15` → échantillon.
 2. Lance le workflow **icp-check** : `args = { prompt_icpFit: <contenu de prompts/icpFit.md>, sample:
-   <candidats>, model: "haiku" }`.
+   <candidats>, model: "haiku" }` — `sample` = le tableau `candidats` renvoyé par `source`.
 3. Lis les `verdicts`, compare chacun à l'ICP visé, repère les ratés → **édite `prompts/icpFit.md`** →
    relance. Boucle jugée à la main, bornée (pas de seuil automatique, pas de boucle infinie).
 4. **Sign-off** : l'utilisateur valide l'alignement avant de continuer.

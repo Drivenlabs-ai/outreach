@@ -16,6 +16,10 @@ Prospection/<Vertical>/
 
 L'état machine vit ailleurs (`~/.claude/prospect-routine/<slug>/` : state / status / receipts / log) — jamais dans le Drive.
 
+**Chemins (à passer en `--registry` / `--config`)** :
+- registre : `<racine Prospection>/campaigns-registry.json` (Drive, sibling des dossiers verticale) — cf. architecture §2.
+- `state_dir` : `~/.claude/prospect-routine/<slug>/` · clé API : `~/.claude/linkedin-prospect.local.md`.
+
 ## Forme de `campaign.json` (draft écrit en §1, ids remplis en §3)
 
 ```jsonc
@@ -41,8 +45,10 @@ C'est la campagne Lemlist **maintenue à la main** qui porte la séquence multic
 profil → invitation sans note → icebreaker → followup → closing ; les 3 messages référencent
 `{{icebreaker}}` / `{{followup}}` / `{{closing}}`) — cf. spec 02 §0 (campagne `agence-immo`).
 
-**Résolution** : son `campaign_id` est **lu depuis `campaigns-registry.json`** (entrée marquée comme
-template), **jamais codé en dur ici** (SSoT : l'id vit dans la config, pas dupliqué en prose). En §3,
+**Provenance** : c'est le `campaign_id` de la campagne `agence-immo` (spec 02 §0). Il est **fourni au
+setup** — l'utilisateur le donne, ou il est inscrit dans une config plugin/`.local.md` ; **ne pas
+l'inventer**. (Une résolution automatique via une entrée « template » du registre n'est **pas câblée** :
+`config.resolve_campaign` ne matche aujourd'hui que `slug` / `campaign_id` — évolution future.) En §3,
 `duplicate-campaign --template-id <cet id>` le duplique : séquence + variables IA voyagent, CRM exclu, la
 nouvelle campagne naît en draft, compteurs à zéro.
 
