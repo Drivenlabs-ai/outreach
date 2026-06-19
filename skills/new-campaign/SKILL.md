@@ -29,8 +29,32 @@ la phase 2 est **autonome** mais s'arrête à deux gardes — avant toute **muta
 
 ## Le flux
 
-<!-- Phase 1 — Task 2 -->
+```
+Phase 1 (interactif) : recherche + Q&R → valide ICP + angle → GATE humain
+Phase 2 (autonome)   : fichiers d'intelligence → icp-check → W2 → smoke → flip dry_run
+                       ↑ s'arrête avant la 1re mutation Lemlist ET avant le flip
+```
+
 ## Phase 1 — Alignement ICP + angle (interactif)
+
+L'ICP et l'angle sont **le choix à fort levier** : s'ils sont faux, tout le reste part de travers. Ils
+exigent le jugement de l'utilisateur — ne les devine pas.
+
+1. **Positioning transversal** : si `Prospection/icp-global.md` existe, lis-le (la verticale en hérite) ;
+   retiens sa version pour `icp_global_version`.
+2. **Recherche** la verticale (web + craft `/lemlist` §1–2) : marché, déclencheurs (triggers), pains,
+   qui décide.
+3. **Q&R structurée** — chaque arbitrage passe par **AskUserQuestion** (options pré-rédigées + reco).
+   Converge jusqu'à verrouiller :
+   - **ICP** — segment précis, basé trigger/pain (pas une liste de critères mous). `/lemlist` §1.
+   - **Persona** — le rôle ciblé (pas un département) + la séniorité (calibre la copy). `/lemlist` §2.
+   - **Angle** — la thèse du message, le fil que l'icebreaker ouvre.
+   - **Filtres People DB** — traduction de l'ICP en filtres de recherche (`filterId` / `in` / `out`).
+     `/lemlist` §3.
+4. **GATE humain** — ne quitte pas la phase 1 tant que l'utilisateur n'a pas **validé explicitement
+   l'ICP + l'angle**.
+5. **Acte** — crée le dossier d'état + le `campaign.json` draft (cf. Référence), puis marque l'étape :
+   `python3 scripts/routine.py status --config <campaign.json> --set phase1_done=true`.
 
 ## Phase 2 — Matérialisation (autonome, gardée)
 
