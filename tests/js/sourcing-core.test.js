@@ -175,17 +175,8 @@ test("buildApproved stores no context variable when the summary is empty", () =>
 // runSourcing — orchestration validated by a mocked run (no real LLM)
 // ---------------------------------------------------------------------------
 
-// Faithful runtime mocks, mirroring the Workflow tool contract.
-async function fakePipeline(items, ...stages) {
-  return Promise.all(items.map(async (item, i) => {
-    let v = item;
-    for (const s of stages) { v = await s(v, item, i); if (v == null) return null; }
-    return v;
-  }));
-}
-async function fakeParallel(thunks) {
-  return Promise.all(thunks.map(async (t) => { try { return await t(); } catch { return null; } }));
-}
+// Faithful runtime mocks, mirroring the Workflow tool contract (shared).
+const { fakePipeline, fakeParallel } = require("./_runtime-mocks.js");
 function makeEnv(args, agentImpl, spy) {
   return {
     args, pipeline: fakePipeline, parallel: fakeParallel, phase: () => {}, log: () => {},
