@@ -82,6 +82,12 @@ test("runCheck keeps a lead even if its agent returns null", async () => {
   assert.deepEqual(out.verdicts, [{ lead: SAMPLE[0], qualifie: false, raison: "" }]);
 });
 
+test("runCheck keeps a lead even if its agent throws (defensive: no run-abort, no null hole)", async () => {
+  const out = await check.runCheck(makeEnv(
+    { prompt_icpFit: "p", sample: [SAMPLE[0]] }, () => { throw new Error("boom"); }));
+  assert.deepEqual(out.verdicts, [{ lead: SAMPLE[0], qualifie: false, raison: "" }]);
+});
+
 test("runCheck honours an explicit model override", async () => {
   const spy = [];
   await check.runCheck(makeEnv(

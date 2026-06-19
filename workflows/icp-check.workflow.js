@@ -62,7 +62,9 @@ async function runCheck(env) {
   const verdicts = await pipeline(sample,
     (lead) => agent(buildScorePrompt(prompt, lead),
       { schema: VERDICT_SCHEMA, model, phase: "run", label: `icp:${(lead && (lead.fullName || lead.linkedinUrl)) || ""}` })
-      .then((v) => pairVerdict(lead, v)));
+      // Per the runtime contract agent() resolves to null on failure (handled below); the rejection arm
+      // is belt-and-suspenders so a dead agent degrades to {qualifie:false} instead of nulling the slot.
+      .then((v) => pairVerdict(lead, v), () => pairVerdict(lead, null)));
   return { verdicts };
 }
 
