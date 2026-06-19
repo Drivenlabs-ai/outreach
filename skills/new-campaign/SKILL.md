@@ -58,17 +58,65 @@ exigent le jugement de l'utilisateur — ne les devine pas.
 
 ## Phase 2 — Matérialisation (autonome, gardée)
 
+Tu pilotes ; tu peux faire des checkpoints avec l'utilisateur. Deux gardes dures : **§3 (avant la 1re
+mutation Lemlist)** et **§5 (avant le flip `dry_run`)**.
+
 ### 1. Écrire les fichiers d'intelligence
+
+Dans le dossier verticale (`Prospection/<Vertical>/`), guidé par la craft `/lemlist` + les sorties de
+la phase 1, rédige :
+- `icp.md` · `persona.md` · `pain-points.md` · `value-proposition.md` · `triggers.md`
+- `prompts/icpFit.md` (qualification) + un `prompts/<step>.md` par message de la séquence — les **noms de
+  fichiers = clés de variables** de la séquence (cf. Référence, contrat de variables).
+- `campaign.json` draft (forme en Référence ; `dry_run: true`, ids `null`).
+
+**Garde** : ne JAMAIS écraser un fichier existant sans confirmation. (Le hook `PostToolUse` lance `verify`
+à chaque écriture de fichier campagne — la dérive prompts ↔ séquence remonte immédiatement.)
 
 ### 2. icp-check — aligner le prompt icpFit
 
+Boucle jusqu'à ce que le jugement Haiku colle à l'intention :
+1. `python3 scripts/routine.py source --config <campaign.json> --target 15` → échantillon.
+2. Lance le workflow **icp-check** : `args = { prompt_icpFit: <contenu de prompts/icpFit.md>, sample:
+   <candidats>, model: "haiku" }`.
+3. Lis les `verdicts`, compare chacun à l'ICP visé, repère les ratés → **édite `prompts/icpFit.md`** →
+   relance. Boucle jugée à la main, bornée (pas de seuil automatique, pas de boucle infinie).
+4. **Sign-off** : l'utilisateur valide l'alignement avant de continuer.
+
 ### 3. W2 — créer la campagne Lemlist
+
+**GARDE : demande le go de l'utilisateur avant la 1re mutation Lemlist** (les étapes ci-dessous créent une
+vraie campagne + liste). Procédure idempotente (cf. spec 02), trace dans `status.w2_steps[]` :
+1. `duplicate-campaign --template-id <DEFAULT_FLOW_TEMPLATE_ID> --name <verticale>` → `campaign_id`
+   (+ `sequence_id`).
+2. `create-list --name <verticale>` → `list_id`.
+3. `verify --config <campaign.json>` → doit être `aligned` (zéro `missing_prompts`) ; sinon corrige les
+   prompts et re-verify.
+4. `register-campaign --registry <campaigns-registry.json> --campaign-json <campaign.json> --data-file
+   <ids> --entry-file <entry>` → écrit le `campaign.json` final (ids remplis) + l'entrée registre.
+
+`DEFAULT_FLOW_TEMPLATE_ID` : cf. Référence.
 
 ### 4. Smoke test — 1 lead en review
 
+1. `source --config <campaign.json> --target 1` → 1 candidat.
+2. Lance le workflow **sourcing** sur ce candidat → `{ lead, variables }`.
+3. `load-lead --config <campaign.json> --input <{lead,variables}> --confirm` → charge le lead **en
+   review** (jamais lancé).
+4. L'utilisateur revoit le lead dans Lemlist (identité + messages générés).
+
 ### 5. Passer en prêt (flip dry_run)
 
+**GARDE DURE : ne flip `dry_run` à `false` que sur confirmation explicite de l'utilisateur.** Une fois
+confirmé, mets `dry_run: false` dans `campaign.json`. La campagne est prête — le run quotidien (W3) peut
+tourner, et le **launch reste un geste séparé et gardé** (jamais en W1).
+
 ## Robustesse & reprise
+
+- **Reprise** : `status` porte `phase1_done` et `w2_steps[]`. Au re-run, saute ce qui est fait — ne
+  re-duplique jamais la campagne.
+- **Idempotence W2** : chaque étape franchie est inscrite ; check-exists avant create (spec 02).
+- **Jamais** d'overwrite de fichier local sans confirmation. **Jamais** de launch en W1.
 
 ## Référence
 
