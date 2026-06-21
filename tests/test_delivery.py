@@ -41,7 +41,8 @@ def rec(monkeypatch):
             "create_lead": (200, {"_id": "lea_1"}),
             "update_variable": (200, {"ok": True}), "create_variable": (200, {"ok": True}),
             "launch_lead": (200, {}),
-            "get_lead": (200, {"_id": "lea_1", "variables": {"icebreaker": "x", "followup": "x", "closing": "x"}})}
+            # get_lead : Lemlist renvoie les variables en clés top-level du lead, pas sous `variables`.
+            "get_lead": (200, {"_id": "lea_1", "icebreaker": "x", "followup": "x", "closing": "x"})}
 
     def mk(name):
         def fn(*a, **k):
@@ -153,7 +154,7 @@ def test_launch_leads_launches_when_variables_complete(rec, tmp_path):
 
 
 def test_launch_leads_refuses_lead_with_empty_required_variable(rec, tmp_path):
-    rec["resp"]["get_lead"] = (200, {"variables": {"icebreaker": "x", "followup": "", "closing": "x"}})
+    rec["resp"]["get_lead"] = (200, {"icebreaker": "x", "followup": "", "closing": "x"})
     out = delivery.launch_leads("KEY", [{"lead_id": "lea_1", "lead_key": "k1"}], "cam_1",
                                 str(tmp_path), REQUIRED, confirm=True)
     assert out["launched"] == []

@@ -160,8 +160,11 @@ def launch_leads(key, items, campaign_id, state_dir, required_keys, *, confirm):
     launched, skipped, errors = [], [], []
     for it in items:
         st, lead = lemlist.get_lead(key, it["lead_id"])
-        variables = lead.get("variables", {}) if isinstance(lead, dict) else {}
-        missing = [k for k in required_keys if not str(variables.get(k) or "").strip()]
+        if isinstance(lead, list):
+            lead = lead[0] if lead else {}
+        # Lemlist pose les variables en clés top-level du lead (pas sous une sous-clé `variables`).
+        vars_src = lead if isinstance(lead, dict) else {}
+        missing = [k for k in required_keys if not str(vars_src.get(k) or "").strip()]
         if missing:
             skipped.append({"lead_id": it["lead_id"], "reason": "variables_incompletes", "missing": missing})
             continue
