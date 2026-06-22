@@ -83,7 +83,8 @@ def cmd_source(a):
     st = state.load_state(cfg["state_dir"])
     cursor = st.get("page_cursor", 1)
     target = a.target if a.target is not None else cfg.get("sourcing_size", 50)
-    out = sourcing.source(key, cfg.get("filters", []), cursor, target)
+    exclude = sourcing.loaded_urls(lemlist.get_contacts(key), cfg["campaign_id"])
+    out = sourcing.source(key, cfg.get("filters", []), cursor, target, exclude=exclude)
     st["page_cursor"] = out["next_cursor"]
     state.save_state(cfg["state_dir"], st)
     _emit(out)

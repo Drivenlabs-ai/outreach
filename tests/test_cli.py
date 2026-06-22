@@ -56,11 +56,12 @@ def test_cli_record_run_then_dedup_flags_seen(tmp_path):
 
 
 def test_cmd_source_wires_filters_and_cursor(monkeypatch, tmp_path, capsys):
-    from prospect_engine import cli, config, sourcing, state
-    cfg = {"filters": [{"filterId": "f1", "in": ["x"]}], "api_key_file": "x", "state_dir": str(tmp_path), "sourcing_size": 25}
+    from prospect_engine import cli, config, lemlist, sourcing, state
+    cfg = {"filters": [{"filterId": "f1", "in": ["x"]}], "api_key_file": "x", "state_dir": str(tmp_path), "sourcing_size": 25, "campaign_id": "cam_1"}
     monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
     monkeypatch.setattr(config, "read_key", lambda p: "KEY")
     monkeypatch.setattr(state, "load_state", lambda d: {"page_cursor": 3})
+    monkeypatch.setattr(lemlist, "get_contacts", lambda key: [])
     cap = {}
 
     def fake_source(key, filters, cursor, target, **kw):
@@ -102,6 +103,7 @@ def test_cmd_source_persists_advanced_cursor(monkeypatch, tmp_path):
     cfg = tmp_path / "campaign.json"
     cfg.write_text(json.dumps({"state_dir": str(sd), "api_key_file": str(keyfile),
                                "campaign_id": "cam_1", "filters": [], "sourcing_size": 5}))
+    monkeypatch.setattr(lemlist, "get_contacts", lambda key: [])
     monkeypatch.setattr(lemlist, "search_people",
                         lambda key, filters, page, size: (200, {"results": [], "limitation": 1}))
 
@@ -110,3 +112,29 @@ def test_cmd_source_persists_advanced_cursor(monkeypatch, tmp_path):
         target = None
     cli.cmd_source(A())
     assert state.load_state(str(sd))["page_cursor"] == 2
+
+
+def test_cmd_source_excludes_campaign_members(monkeypatch, tmp_path):
+    from prospect_engine import cli, lemlist, state
+    sd = tmp_path / "state"
+    keyfile = tmp_path / "k.md"
+    keyfile.write_text("lemlist_api_key: X")
+    cfg = tmp_path / "campaign.json"
+    cfg.write_text(json.dumps({"state_dir": str(sd), "api_key_file": str(keyfile),
+                               "campaign_id": "cam_1", "filters": [], "sourcing_size": 5}))
+    monkeypatch.setattr(lemlist, "get_contacts",
+                        lambda key: [{"linkedinUrl": "https://lk/a", "campaigns": [{"campaignId": "cam_1"}]}])
+    captured = {}
+    def fake_search(key, filters, page, size):
+        captured["filters"] = filters
+        return (200, {"results": [{"lead_linkedin_url": "https://lk/a", "lead_id": "a"},
+                                  {"lead_linkedin_url": "https://lk/b", "lead_id": "b"}],
+                      "limitation": 1})
+    monkeypatch.setattr(lemlist, "search_people", fake_search)
+
+    class A:
+        config = str(cfg)
+        target = None
+    cli.cmd_source(A())
+    out_f = [f for f in captured["filters"] if f["filterId"] == "leadLinkedInUrl"]
+    assert out_f and out_f[0]["out"] == ["https://lk/a"]

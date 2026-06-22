@@ -70,3 +70,19 @@ def test_source_propagates_limitation(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", limitation=42))
     out = sourcing.source("KEY", [], cursor=1, target=1)
     assert out["limitation"] == 42
+
+
+def test_loaded_urls_keeps_only_this_campaign_members():
+    contacts = [
+        {"linkedinUrl": "https://lk/a", "campaigns": [{"campaignId": "cam_1"}]},
+        {"linkedinUrl": "https://lk/b", "campaigns": [{"campaignId": "cam_2"}]},
+        {"linkedinUrl": "https://lk/c", "campaigns": []},
+        {"campaigns": [{"campaignId": "cam_1"}]},  # sans linkedinUrl → ignoré
+    ]
+    assert sourcing.loaded_urls(contacts, "cam_1") == {"https://lk/a"}
+
+
+def test_loaded_urls_caps_at_limit():
+    contacts = [{"linkedinUrl": f"https://lk/{i}", "campaigns": [{"campaignId": "cam_1"}]}
+                for i in range(10)]
+    assert len(sourcing.loaded_urls(contacts, "cam_1", cap=3)) == 3

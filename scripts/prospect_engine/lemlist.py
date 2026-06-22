@@ -104,6 +104,12 @@ def get_campaign_leads(key, campaign_id):
     return paginate(key, f"/campaigns/{campaign_id}/leads/", {"limit": 100})
 
 
+def get_contacts(key):
+    """Tous les contacts du compte (paginé). Chaque contact porte `linkedinUrl` + `campaigns[]`.
+    Renvoie [] si l'appel échoue (le sourcing dégrade alors sans filtre d'exclusion)."""
+    return paginate(key, "/contacts", {"limit": 100})
+
+
 # ---------- setup (spec 02) ----------
 
 def duplicate_campaign(key, template_id, name):

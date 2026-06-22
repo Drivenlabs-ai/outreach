@@ -7,6 +7,18 @@ suivant. Le `limitation` natif (quota/24 h) est remonté — on le respecte, on 
 from prospect_engine import lemlist
 
 
+EXCLUDE_CAP = 900  # sous le plafond du filtre `out` Lemlist (~1000)
+
+
+def loaded_urls(contacts, campaign_id, cap=EXCLUDE_CAP):
+    """linkedinUrl des contacts déjà membres de cette campagne (via `contact.campaigns`), borné au
+    plafond `out`. C'est « Lemlist = mémoire » des leads déjà chargés."""
+    urls = [c["linkedinUrl"] for c in contacts
+            if c.get("linkedinUrl")
+            and any(cm.get("campaignId") == campaign_id for cm in (c.get("campaigns") or []))]
+    return set(urls[:cap])
+
+
 def _project(r):
     """Résultat brut People DB → forme lead (linkedinUrl, fullName, jobTitle, companyName, …)."""
     return {
