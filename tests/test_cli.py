@@ -145,3 +145,44 @@ def test_cmd_source_excludes_campaign_members(monkeypatch, tmp_path):
     cli.cmd_source(A())
     out_f = [f for f in captured["filters"] if f["filterId"] == "leadLinkedInUrl"]
     assert out_f and out_f[0]["out"] == ["https://lk/a"]
+
+
+def test_cmd_source_warns_on_contacts_fetch_failure(monkeypatch, tmp_path, capsys):
+    from prospect_engine import cli, lemlist, state
+    sd = tmp_path / "state"
+    keyfile = tmp_path / "k.md"
+    keyfile.write_text("lemlist_api_key: X")
+    cfg = tmp_path / "campaign.json"
+    cfg.write_text(json.dumps({"state_dir": str(sd), "api_key_file": str(keyfile),
+                               "campaign_id": "cam_1", "filters": [], "sourcing_size": 5}))
+    monkeypatch.setattr(lemlist, "get_contacts", lambda key: None)
+    monkeypatch.setattr(lemlist, "search_people",
+                        lambda key, filters, page, size: (200, {"results": [], "limitation": 1}))
+
+    class A:
+        config = str(cfg)
+        target = None
+    cli.cmd_source(A())
+    assert "déjà en campagne" in capsys.readouterr().err
+    assert state.load_state(str(sd))["page_cursor"] == 2
+
+
+def test_cmd_source_warns_on_exclusion_cap(monkeypatch, tmp_path, capsys):
+    from prospect_engine import cli, lemlist, sourcing
+    sd = tmp_path / "state"
+    keyfile = tmp_path / "k.md"
+    keyfile.write_text("lemlist_api_key: X")
+    cfg = tmp_path / "campaign.json"
+    cfg.write_text(json.dumps({"state_dir": str(sd), "api_key_file": str(keyfile),
+                               "campaign_id": "cam_1", "filters": [], "sourcing_size": 5}))
+    big = [{"linkedinUrl": f"https://lk/{i}", "campaigns": [{"campaignId": "cam_1"}]}
+           for i in range(sourcing.EXCLUDE_CAP + 3)]
+    monkeypatch.setattr(lemlist, "get_contacts", lambda key: big)
+    monkeypatch.setattr(lemlist, "search_people",
+                        lambda key, filters, page, size: (200, {"results": [], "limitation": 1}))
+
+    class A:
+        config = str(cfg)
+        target = None
+    cli.cmd_source(A())
+    assert "plafonn" in capsys.readouterr().err
