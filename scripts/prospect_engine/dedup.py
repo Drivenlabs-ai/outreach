@@ -3,7 +3,7 @@
 Optimisation, PAS garantie de correction : la correction cross-campagne est tenue nativement par
 `create-lead?deduplicate=true` (email) et nos reçus (linkedinUrl) ; l'opt-out par la suppression
 native Lemlist. Ce filtre évite seulement de gaspiller des appels create-lead sur des leads qu'on
-a déjà chargés dans cette campagne, déjà vus récemment, ou sans identifiant exploitable.
+a déjà chargés dans cette campagne, ou sans identifiant exploitable.
 """
 from prospect_engine.receipts import lead_key
 

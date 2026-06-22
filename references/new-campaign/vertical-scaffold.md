@@ -32,7 +32,7 @@ L'état machine vit ailleurs (`~/.claude/prospect-routine/<slug>/` : state / sta
   "filters": [ /* filtres People DB issus de la phase 1 : { "filterId": …, "in": […], "out": […] } */ ],
   "models": { "scoring": "haiku", "writing": "sonnet", "judge": "sonnet" },
   "dry_run": true,                     // reste true jusqu'au flip final, gardé (§5)
-  "seen_ids_inline_max": 3000,
+  "sourcing_size": 50,                 // taille du lot People DB par run (curseur de page)
   "enrich": { "enabled": false },      // optionnel ; { enabled, directive, store, model } si activé
   "template_version": "1.0",
   "icp_global_version": "1"            // version de icp-global.md héritée (si présent)

@@ -11,12 +11,14 @@ les `sequence_keys` de `verify`. Tout le reste se relit depuis `<config_path>`. 
 `--sourced-file`, `--entry-file` attendent un **chemin de fichier** que tu écris d'abord (le moteur les
 lit sur disque), pas une valeur inline.
 
-1. **prepare** — `prepare --config <config_path> --date <date>` → `{config, seenIds, prompts, dry_run}`.
+1. **prepare** — `prepare --config <config_path> --date <date>` → `{config, prompts, dry_run}`.
    Pré-vol auth (`GET /team`) : STOP si KO ; prompt manquant ou vide : STOP. `prompts` = dict plat
    `{icpFit, <step>:…}`, à porter jusqu'à l'étape 4.
-2. **source** — `source --config <config_path>` → `{candidats, limitation, exhausted}`. `candidats` =
-   leads inédits projetés en forme lead. Écris ce tableau `candidats` dans un fichier : il resservira au
-   `record-run` (§6). S'arrêter si `limitation` (quota People DB) est bas.
+2. **source** — `source --config <config_path>` → `{candidats, limitation, next_cursor, exhausted}`.
+   `candidats` = leads de la page courante du pool People DB (le curseur de page avance et se persiste
+   automatiquement ; les leads déjà en campagne sont exclus par filtre natif `out`). Écris ce tableau
+   `candidats` dans un fichier : il resservira au `record-run` (§6) pour le décompte. S'arrêter si
+   `limitation` (quota People DB) est bas ou `exhausted` (fin de pool → élargir les filtres).
 3. **verify** — `verify --config <config_path>` → `{aligned, sequence_variables, …}`. `aligned` doit être
    vrai (sinon corriger les prompts : un lead sans ses variables ne se lancera pas). `sequence_keys` =
    les variables de message de la séquence = `sequence_variables` hors champs natifs (firstName,
@@ -28,8 +30,9 @@ lit sur disque), pas une valeur inline.
    --config <config_path> --input <chemin> --confirm`. Charge en review, idempotent (reçus). `--confirm`
    est toujours passé ; c'est `dry_run` qui garde (ci-dessous).
 6. **record-run** — `record-run --config <config_path> --date <date> --sourced-file <chemin du fichier
-   candidats de l'étape 2> --true <nb chargés> --false <nb écartés>` → déjà-vus glissants + historique.
-   Tous les candidats sourcés entrent dans les déjà-vus, même écartés au score (évite de les re-scorer).
+   candidats de l'étape 2> --true <nb chargés> --false <nb écartés>` → append historique + horodatage
+   (le décompte sourcé vient du fichier). Le non-re-score est assuré par le curseur de page (§2), pas par
+   record-run.
 7. **log** — écris le résumé du run dans un fichier, puis `log --config <config_path> --entry-file <chemin>`.
 
 ## dry_run
