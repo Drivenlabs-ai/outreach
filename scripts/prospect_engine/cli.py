@@ -80,9 +80,13 @@ def cmd_launch(a):
 def cmd_source(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
-    seen = set(state.load_state(cfg["state_dir"])["seen_lead_ids"])
-    target = a.target if a.target is not None else cfg.get("daily_target", 20)
-    _emit(sourcing.source(key, cfg.get("filters", []), seen, target))
+    st = state.load_state(cfg["state_dir"])
+    cursor = st.get("page_cursor", 1)
+    target = a.target if a.target is not None else cfg.get("sourcing_size", 50)
+    out = sourcing.source(key, cfg.get("filters", []), cursor, target)
+    st["page_cursor"] = out["next_cursor"]
+    state.save_state(cfg["state_dir"], st)
+    _emit(out)
 
 
 # ---------- setup (spec 02) ----------

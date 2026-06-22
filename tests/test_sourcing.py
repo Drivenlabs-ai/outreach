@@ -1,4 +1,4 @@
-"""Sourcing People DB : pagination, exclusion des déjà-vus, projection, arrêts (target/quota/épuisement)."""
+"""Sourcing People DB : une page au curseur, exclusion native, projection, fin de pool."""
 from prospect_engine import lemlist, sourcing
 
 
@@ -7,51 +7,66 @@ def _r(url, name="X Y", title="Gérant", company="Agence"):
             "current_exp_company_name": company, "location": "Lyon", "lead_id": url[-1]}
 
 
-def _page(*urls):
-    return (200, {"results": [_r(u) for u in urls], "limitation": 1999})
+def _page(*urls, limitation=1999):
+    return (200, {"results": [_r(u) for u in urls], "limitation": limitation})
 
 
-def test_source_projects_people_db_result_to_lead(monkeypatch):
+def test_source_projects_result_to_lead(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a"))
-    out = sourcing.source("KEY", filters=[], seen=set(), target=1)
+    out = sourcing.source("KEY", [], cursor=1, target=1)
     lead = out["candidats"][0]
     assert lead["linkedinUrl"] == "https://lk/a"
     assert lead["fullName"] == "X Y" and lead["jobTitle"] == "Gérant" and lead["companyName"] == "Agence"
 
 
-def test_source_excludes_seen(monkeypatch):
+def test_source_fetches_cursor_page_and_advances(monkeypatch):
+    seen = {}
+    def fake(key, filters, page, size):
+        seen["page"], seen["size"] = page, size
+        return _page("https://lk/a", "https://lk/b")
+    monkeypatch.setattr(lemlist, "search_people", fake)
+    out = sourcing.source("KEY", [], cursor=4, target=2)
+    assert seen["page"] == 4 and seen["size"] == 2
+    assert out["next_cursor"] == 5
+
+
+def test_source_injects_out_filter_from_exclude(monkeypatch):
+    cap = {}
+    def fake(key, filters, page, size):
+        cap["filters"] = filters
+        return _page("https://lk/b")
+    monkeypatch.setattr(lemlist, "search_people", fake)
+    sourcing.source("KEY", [{"filterId": "country", "in": ["France"], "out": []}],
+                    cursor=1, target=5, exclude={"https://lk/a"})
+    out_f = [f for f in cap["filters"] if f["filterId"] == "leadLinkedInUrl"]
+    assert out_f and out_f[0]["in"] == [] and out_f[0]["out"] == ["https://lk/a"]
+
+
+def test_source_excludes_urls_client_side(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", "https://lk/b"))
-    out = sourcing.source("KEY", filters=[], seen={"https://lk/a"}, target=5)
+    out = sourcing.source("KEY", [], cursor=1, target=5, exclude={"https://lk/a"})
     assert [c["linkedinUrl"] for c in out["candidats"]] == ["https://lk/b"]
 
 
-def test_source_stops_at_target(monkeypatch):
-    monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", "https://lk/b", "https://lk/c"))
-    out = sourcing.source("KEY", filters=[], seen=set(), target=2)
-    assert len(out["candidats"]) == 2
-
-
-def test_source_dedups_within_results(monkeypatch):
+def test_source_dedups_within_page(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", "https://lk/a"))
-    out = sourcing.source("KEY", filters=[], seen=set(), target=5)
+    out = sourcing.source("KEY", [], cursor=1, target=5)
     assert len(out["candidats"]) == 1
-
-
-def test_source_paginates_until_target(monkeypatch):
-    pages = {1: _page(*[f"https://lk/{i}" for i in range(100)]),
-             2: _page("https://lk/x", "https://lk/y")}
-    monkeypatch.setattr(lemlist, "search_people", lambda key, filters, page, size: pages[page])
-    out = sourcing.source("KEY", filters=[], seen=set(), target=101, size=100)
-    assert len(out["candidats"]) == 101 and out["pages_used"] == 2
 
 
 def test_source_marks_exhausted_on_short_page(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a"))
-    out = sourcing.source("KEY", filters=[], seen=set(), target=50, size=100)
-    assert out["exhausted"] is True
+    out = sourcing.source("KEY", [], cursor=1, target=50)
+    assert out["exhausted"] is True and out["next_cursor"] == 2
+
+
+def test_source_not_exhausted_on_full_page(monkeypatch):
+    monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", "https://lk/b"))
+    out = sourcing.source("KEY", [], cursor=1, target=2)
+    assert out["exhausted"] is False
 
 
 def test_source_propagates_limitation(monkeypatch):
-    monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: (200, {"results": [_r("https://lk/a")], "limitation": 42}))
-    out = sourcing.source("KEY", filters=[], seen=set(), target=1)
+    monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: _page("https://lk/a", limitation=42))
+    out = sourcing.source("KEY", [], cursor=1, target=1)
     assert out["limitation"] == 42
