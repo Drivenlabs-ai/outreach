@@ -2,6 +2,7 @@
 modules, imprime du JSON sur stdout. Aucune logique métier ici (elle vit dans les modules)."""
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -79,7 +80,15 @@ def cmd_source(a):
     st = state.load_state(cfg["state_dir"])
     cursor = st.get("page_cursor", 1)
     target = a.target if a.target is not None else cfg.get("sourcing_size", 50)
-    exclude = sourcing.loaded_urls(lemlist.get_contacts(key), cfg["campaign_id"])
+    contacts = lemlist.get_contacts(key)
+    if contacts is None:
+        print("avertissement: récupération des contacts Lemlist KO — sourcing sans filtre « déjà en campagne »",
+              file=sys.stderr)
+        contacts = []
+    exclude = sourcing.loaded_urls(contacts, cfg["campaign_id"])
+    if len(exclude) >= sourcing.EXCLUDE_CAP:
+        print(f"avertissement: exclusion plafonnée à {sourcing.EXCLUDE_CAP} (plafond filtre out) — "
+              "les membres de campagne au-delà ne sont pas exclus", file=sys.stderr)
     out = sourcing.source(key, cfg.get("filters", []), cursor, target, exclude=exclude)
     st["page_cursor"] = out["next_cursor"]
     state.save_state(cfg["state_dir"], st)

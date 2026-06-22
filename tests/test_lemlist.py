@@ -157,3 +157,18 @@ def test_search_people_route_and_body(monkeypatch):
     lemlist.search_people("KEY", [{"filterId": "f1", "in": ["x"]}], page=1, size=25)
     assert cap["method"] == "POST" and cap["route"] == "/database/people"
     assert cap["body"] == {"filters": [{"filterId": "f1", "in": ["x"]}], "page": 1, "size": 25}
+
+
+def test_get_contacts_none_on_fetch_failure(monkeypatch):
+    # Échec de récupération → None (distinct d'une liste vide légitime) pour que le sourcing avertisse.
+    monkeypatch.setattr(lemlist, "api_call", lambda method, route, key, *a, **k: (500, "err"))
+    assert lemlist.get_contacts("KEY") is None
+
+
+def test_get_contacts_paginates_on_success(monkeypatch):
+    def fake(method, route, key, *a, **k):
+        if route == "/contacts?limit=1":
+            return (200, {"data": [{}]})            # sonde OK
+        return (200, {"data": [{"linkedinUrl": "https://lk/a"}]})  # page (<100 → stop)
+    monkeypatch.setattr(lemlist, "api_call", fake)
+    assert lemlist.get_contacts("KEY") == [{"linkedinUrl": "https://lk/a"}]

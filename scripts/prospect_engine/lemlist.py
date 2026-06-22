@@ -106,7 +106,12 @@ def get_campaign_leads(key, campaign_id):
 
 def get_contacts(key):
     """Tous les contacts du compte (paginé). Chaque contact porte `linkedinUrl` + `campaigns[]`.
-    Renvoie [] si l'appel échoue (le sourcing dégrade alors sans filtre d'exclusion)."""
+    Renvoie None si la récupération échoue (distinct d'une liste vide légitime) → le sourcing dégrade
+    alors sans filtre d'exclusion, avec avertissement. Une sonde précède la pagination pour distinguer
+    l'échec de l'absence de contacts."""
+    st, _ = api_call("GET", "/contacts?limit=1", key)
+    if st != 200:
+        return None
     return paginate(key, "/contacts", {"limit": 100})
 
 
