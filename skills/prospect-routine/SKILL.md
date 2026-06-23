@@ -1,6 +1,6 @@
 ---
 name: prospect-routine
-description: Déclencher quand l'utilisateur veut faire tourner la prospection outbound — lancer le run / sourcing quotidien d'une campagne existante ("run la prospection agences immo", "source des leads pour X", "fais tourner la campagne Y aujourd'hui", "lance la routine prospection"), ou piloter/auditer une verticale de prospection sans préciser l'action. Créer une campagne de zéro est couvert par le skill new-campaign ; affiner le ciblage d'une campagne existante par le skill edit-campaign ; modifier la séquence, la config ou dupliquer une verticale n'est pas encore couvert.
+description: Déclencher quand l'utilisateur veut faire tourner la prospection outbound — lancer le run / sourcing quotidien d'une campagne existante ("run la prospection agences immo", "source des leads pour X", "fais tourner la campagne Y aujourd'hui", "lance la routine prospection"), ou piloter/auditer une verticale de prospection sans préciser l'action. Créer une campagne de zéro est couvert par le skill new-campaign ; affiner le ciblage ou la séquence d'une campagne existante par le skill edit-campaign ; modifier la config ou dupliquer une verticale n'est pas encore couvert.
 ---
 
 # prospect-routine — routeur
@@ -32,8 +32,8 @@ Ne jamais muter Lemlist à la main : passer par le moteur, via la brique de l'in
 |---|---|
 | faire tourner le sourcing du jour | Run quotidien (ci-dessous) |
 | créer une campagne de zéro | skill `new-campaign` |
-| modifier le ciblage d'une campagne | skill `edit-campaign` (filtres People DB + prompt icpFit) |
-| modifier la séquence / la config / dupliquer | pas encore couvert — le dire, ne rien muter à la main |
+| modifier le ciblage ou la séquence d'une campagne | skill `edit-campaign` (ciblage + séquence) |
+| modifier la config ou dupliquer une verticale | pas encore couvert — le dire, ne rien muter à la main |
 
 `new-campaign` et `edit-campaign` se déclenchent seuls sur leur intention ; s'ils ne l'ont pas fait, l'y
 renvoyer. Demande sans action précisée (« occupe-toi de la prospection X ») → proposer le run du jour, la
@@ -62,10 +62,11 @@ Ce résumé ne suffit pas à exécuter : les flags exacts, l'assemblage des args
 
 - **Créer** une campagne → skill `new-campaign` (recherche ICP/angle interactive, fichiers d'intelligence,
   création Lemlist, smoke test).
-- **Modifier le ciblage** d'une campagne existante (filtres People DB + prompt icpFit) → skill
-  `edit-campaign`. 100% local, validé sur échantillon.
-- **Modifier la séquence, la config / l'état, ou dupliquer** une verticale → pas encore construit. Le dire
-  à l'utilisateur ; ne pas muter la séquence à la main.
+- **Modifier le ciblage ou la séquence** d'une campagne existante → skill `edit-campaign`. Ciblage (filtres
+  People DB + prompt icpFit) : 100% local. Séquence (contenu, structure, timing, canal) : mutation directe
+  de Lemlist, campagne en pause obligatoire, prompts locaux resynchronisés.
+- **Modifier la config / l'état, ou dupliquer** une verticale → pas encore construit. Le dire à
+  l'utilisateur ; ne pas muter à la main.
 
 ## Références — charge avant d'agir
 
@@ -76,6 +77,6 @@ référence : mieux vaut une de trop qu'une de moins.**
 |---|---|
 | Run quotidien | `references/prospect-routine/run.md` |
 | Créer une campagne | skill `new-campaign` (+ sa réf `references/new-campaign/vertical-scaffold.md`) |
-| Modifier le ciblage | skill `edit-campaign` |
+| Modifier le ciblage ou la séquence | skill `edit-campaign` (la séquence charge `references/edit-campaign/sequence-edit.md`) |
 
 Les skills chargent eux-mêmes leurs propres références ; le routeur n'a qu'à les déclencher.

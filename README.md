@@ -16,7 +16,7 @@ Le pont entre les trois : le **`campaign_id`**. SSoT strict — Lemlist porte la
 
 - `skills/prospect-routine/` — le **routeur** (déclenchement langage naturel + dispatch d'intention).
 - `skills/new-campaign/` — **W1** : crée une campagne pour une verticale (align ICP/angle interactif → fichiers d'intelligence → `icp-check` → campagne Lemlist → smoke). Un skill piloté par Claude qui orchestre les briques existantes — **zéro nouveau code moteur**.
-- `skills/edit-campaign/` — **SP-A** : affine le ciblage d'une campagne existante (filtres People DB + prompt `icpFit`), validé sur échantillon via `icp-check`. 100% local, zéro mutation Lemlist ; un primitive moteur neuf (`cursor`).
+- `skills/edit-campaign/` — **SP-A + SP-B** : modifie une campagne existante — ciblage (filtres People DB + prompt `icpFit`, 100% local, validé via `icp-check`) et séquence (contenu / structure / timing / canal, mutation directe Lemlist sur campagne en pause, prompts resynchronisés). Moteur : primitive `cursor` + wrappers de mutation de séquence.
 - `scripts/routine.py` — le **moteur** déterministe : seul point d'IO Lemlist + état, modèle de livraison « charger puis lancer ». Zéro LLM.
 - `workflows/*.workflow.js` — les **workflows** (fan-out d'agents) : sourcing (W3), alignement du prompt icpFit au setup (`icp-check`). Le runtime des workflows est sandboxé (pas de `require`/`import`) : leur logique déterministe vit dans `workflows/lib/*-core.js` (helpers purs + orchestration, testés par `node --test`), et le `.workflow.js` self-contained en est **généré** sous garde de synchronisation. (W2 lemlist-setup est une procédure déterministe du routeur, pas un workflow.)
 - `agents/` — sous-agents sourcing / scoring / juge (à venir).
@@ -50,4 +50,4 @@ AGPL-3.0-only — libre et ouvert, copyleft : toute redistribution ou usage en s
 
 ## Statut
 
-Briques v1 construites et testées (unitaires) : moteur (`routine.py`), W2 (setup Lemlist), W3 (sourcing), `icp-check`, W1 (`new-campaign`) et le routeur (`prospect-routine`). Run live initial effectué (leads chargés en review). v1.5 « modifier une campagne » en cours : l'édition du ciblage (`edit-campaign`, SP-A) est livrée ; séquence (SP-B), config/état (SP-C), dupliquer-segment (SP-D) restent au backlog.
+Briques v1 construites et testées (unitaires) : moteur (`routine.py`), W2 (setup Lemlist), W3 (sourcing), `icp-check`, W1 (`new-campaign`) et le routeur (`prospect-routine`). Run live initial effectué (leads chargés en review). v1.5 « modifier une campagne » en cours : l'édition du ciblage (SP-A) et de la séquence (SP-B) via `edit-campaign` sont livrées ; config/état (SP-C) et dupliquer-segment (SP-D) restent au backlog.
