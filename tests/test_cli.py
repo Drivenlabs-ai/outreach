@@ -266,9 +266,48 @@ def test_cmd_add_step_passes_when_paused(monkeypatch, tmp_path, capsys):
     assert cap["sid"] == "seq_1" and cap["body"]["type"] == "email" and out["status"] == 200
 
 
-def test_cli_delete_step_blocked_on_running_via_subprocess(tmp_path, monkeypatch):
-    # Intégration parseur : la commande existe et exige ses flags.
-    cfg = _campaign(tmp_path)
-    r = run("delete-step", "--config", cfg, "--sequence-id", "seq_1", "--step-id", "stp_1")
-    # Sans réseau réel le get_campaign échoue → état inconnu → gate STOP (returncode ≠ 0).
-    assert r.returncode != 0
+def test_cmd_delete_step_blocked_when_campaign_running(monkeypatch):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"status": "running"}))
+    called = {"del": False}
+    monkeypatch.setattr(lemlist, "delete_step", lambda *a, **k: called.__setitem__("del", True) or (200, {}))
+    class A:
+        config = "x"; sequence_id = "seq_1"; step_id = "stp_1"
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_delete_step(A())
+    assert called["del"] is False  # mutation jamais appelée si campagne active
+
+
+def test_cmd_update_step_blocked_when_campaign_running(monkeypatch, tmp_path):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"status": "running"}))
+    called = {"upd": False}
+    monkeypatch.setattr(lemlist, "update_step", lambda *a, **k: called.__setitem__("upd", True) or (200, {}))
+    body = tmp_path / "b.json"; body.write_text(json.dumps({"type": "email", "message": "M"}))
+    class A:
+        config = "x"; sequence_id = "seq_1"; step_id = "stp_1"; input = str(body)
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_update_step(A())
+    assert called["upd"] is False
+
+
+def test_cmd_edit_schedule_blocked_when_campaign_running(monkeypatch, tmp_path):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"status": "running"}))
+    called = {"sched": False}
+    monkeypatch.setattr(lemlist, "update_schedule", lambda *a, **k: called.__setitem__("sched", True) or (200, {}))
+    body = tmp_path / "b.json"; body.write_text(json.dumps({"start": "09:00"}))
+    class A:
+        config = "x"; schedule_id = "skd_1"; input = str(body)
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_edit_schedule(A())
+    assert called["sched"] is False

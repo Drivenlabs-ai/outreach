@@ -21,18 +21,32 @@ def test_ensure_editable_allows_paused_and_draft():
 def test_summarize_flattens_keyed_sequences_with_ids():
     res = {
         "seq_1": {"steps": [
-            {"_id": "stp_1", "type": "email", "delay": 0, "subject": "Hi", "message": "{{icebreaker}}"},
-            {"_id": "stp_2", "type": "linkedinSend", "delay": 2, "message": "{{followup}}"},
+            {"_id": "stp_1", "index": 0, "type": "email", "delay": 0, "subject": "Hi", "message": "{{icebreaker}}"},
+            {"_id": "stp_2", "index": 1, "type": "linkedinSend", "delay": 2, "message": "{{followup}}"},
         ]},
     }
     out = sequence.summarize(res)
     assert out == [
-        {"sequence_id": "seq_1", "step_id": "stp_1", "type": "email", "delay": 0,
+        {"sequence_id": "seq_1", "step_id": "stp_1", "index": 0, "type": "email", "delay": 0,
          "subject": "Hi", "message": "{{icebreaker}}"},
-        {"sequence_id": "seq_1", "step_id": "stp_2", "type": "linkedinSend", "delay": 2,
+        {"sequence_id": "seq_1", "step_id": "stp_2", "index": 1, "type": "linkedinSend", "delay": 2,
          "subject": None, "message": "{{followup}}"},
     ]
 
 
+def test_summarize_exposes_index_for_reorder():
+    res = {"seq_1": {"steps": [{"_id": "stp_1", "index": 3, "type": "email", "message": "m"}]}}
+    assert sequence.summarize(res)[0]["index"] == 3
+
+
 def test_summarize_tolerates_non_dict():
     assert sequence.summarize("oops") == []
+
+
+def test_summarize_tolerates_missing_steps():
+    assert sequence.summarize({"seq_1": {}}) == []
+
+
+def test_ensure_editable_blocks_none_campaign():
+    with pytest.raises(sequence.CampaignActive):
+        sequence.ensure_editable(None)

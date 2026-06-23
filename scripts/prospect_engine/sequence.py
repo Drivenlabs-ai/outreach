@@ -24,7 +24,9 @@ def ensure_editable(campaign):
 
 def summarize(sequences_res):
     """Aplatit la réponse get_campaign_sequences (dict {sequence_id: {steps: [...]}}) en une liste plate
-    d'étapes portant leur `sequence_id` et `step_id` — de quoi montrer la séquence et cibler les mutations."""
+    d'étapes portant leur `sequence_id`, `step_id` et `index` — de quoi montrer la séquence et cibler les
+    mutations. L'`index` est requis pour le réordonnancement et le recreate de canal (re-poser la position).
+    `subject` vaut None pour les types d'étape sans sujet."""
     out = []
     seqs = sequences_res if isinstance(sequences_res, dict) else {}
     for seq_id, seq in seqs.items():
@@ -34,6 +36,7 @@ def summarize(sequences_res):
             out.append({
                 "sequence_id": seq_id,
                 "step_id": st.get("_id"),
+                "index": st.get("index"),
                 "type": st.get("type"),
                 "delay": st.get("delay"),
                 "subject": st.get("subject"),
