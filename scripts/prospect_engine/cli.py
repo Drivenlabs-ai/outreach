@@ -15,6 +15,14 @@ def _emit(obj):
     print(json.dumps(obj, ensure_ascii=False))
 
 
+def _emit_result_or_stop(st, res):
+    """Émet le résultat d'une mutation puis sort en code non-zéro si l'API a échoué (status hors 2xx) —
+    la règle « stop on partial failure » devient imposée, pas seulement documentée."""
+    _emit({"status": st, "result": res})
+    if not (200 <= st < 300):
+        raise SystemExit(1)
+
+
 def _key(a):
     return config.read_key(getattr(a, "api_key_file", None) or DEFAULT_KEY)
 
@@ -107,7 +115,9 @@ def _editable_or_stop(key, campaign_id):
 def cmd_sequence(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
-    _, res = lemlist.get_campaign_sequences(key, cfg["campaign_id"])
+    st, res = lemlist.get_campaign_sequences(key, cfg["campaign_id"])
+    if st != 200:
+        raise SystemExit(f"STOP: lecture de la séquence → {st} (lecture KO ; on n'édite pas à l'aveugle)")
     _emit({"steps": sequence.summarize(res)})
 
 
@@ -117,7 +127,7 @@ def cmd_add_step(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.add_step(key, a.sequence_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_update_step(a):
@@ -126,7 +136,7 @@ def cmd_update_step(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.update_step(key, a.sequence_id, a.step_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_delete_step(a):
@@ -134,7 +144,7 @@ def cmd_delete_step(a):
     key = config.read_key(cfg["api_key_file"])
     _editable_or_stop(key, cfg["campaign_id"])
     st, res = lemlist.delete_step(key, a.sequence_id, a.step_id)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_edit_schedule(a):
@@ -143,7 +153,7 @@ def cmd_edit_schedule(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.update_schedule(key, a.schedule_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_cursor(a):

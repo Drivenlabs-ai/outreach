@@ -311,3 +311,27 @@ def test_cmd_edit_schedule_blocked_when_campaign_running(monkeypatch, tmp_path):
     with __import__("pytest").raises(SystemExit):
         cli.cmd_edit_schedule(A())
     assert called["sched"] is False
+
+
+def test_cmd_sequence_stops_on_read_failure(monkeypatch):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign_sequences", lambda key, cid: (401, "unauthorized"))
+    class A: config = "x"
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_sequence(A())
+
+
+def test_cmd_delete_step_exits_nonzero_on_api_error(monkeypatch):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"status": "paused"}))
+    monkeypatch.setattr(lemlist, "delete_step", lambda *a, **k: (404, "Step not found"))
+    class A:
+        config = "x"; sequence_id = "seq_1"; step_id = "stp_x"
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_delete_step(A())
