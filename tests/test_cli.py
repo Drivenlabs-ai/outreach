@@ -320,8 +320,9 @@ def test_cmd_sequence_stops_on_read_failure(monkeypatch):
     monkeypatch.setattr(config, "read_key", lambda p: "KEY")
     monkeypatch.setattr(lemlist, "get_campaign_sequences", lambda key, cid: (401, "unauthorized"))
     class A: config = "x"
-    with __import__("pytest").raises(SystemExit):
+    with __import__("pytest").raises(SystemExit) as e:
         cli.cmd_sequence(A())
+    assert e.value.code  # sortie non-zéro : lecture KO
 
 
 def test_cmd_delete_step_exits_nonzero_on_api_error(monkeypatch):
@@ -333,8 +334,26 @@ def test_cmd_delete_step_exits_nonzero_on_api_error(monkeypatch):
     monkeypatch.setattr(lemlist, "delete_step", lambda *a, **k: (404, "Step not found"))
     class A:
         config = "x"; sequence_id = "seq_1"; step_id = "stp_x"
-    with __import__("pytest").raises(SystemExit):
+    with __import__("pytest").raises(SystemExit) as e:
         cli.cmd_delete_step(A())
+    assert e.value.code  # sortie non-zéro : erreur API
+
+
+def test_cmd_add_step_stops_when_get_campaign_unreadable(monkeypatch, tmp_path):
+    # Gate fail-closed : lecture d'état non-200 (corps non-dict) → mutation bloquée, jamais appelée.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (500, "server error"))
+    called = {"add": False}
+    monkeypatch.setattr(lemlist, "add_step", lambda *a, **k: called.__setitem__("add", True) or (200, {}))
+    body = tmp_path / "b.json"; body.write_text(json.dumps({"type": "email", "subject": "S", "message": "M"}))
+    class A:
+        config = "x"; sequence_id = "seq_1"; input = str(body)
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_add_step(A())
+    assert called["add"] is False  # mutation jamais appelée si l'état est illisible
 
 
 def test_cmd_campaign_pause_calls_wrapper(monkeypatch, capsys):
@@ -383,5 +402,6 @@ def test_cmd_campaign_pause_exits_nonzero_on_error(monkeypatch, capsys):
     monkeypatch.setattr(config, "read_key", lambda p: "KEY")
     monkeypatch.setattr(lemlist, "pause_campaign", lambda key, cid: (403, "blocked"))
     class A: config = "x"
-    with __import__("pytest").raises(SystemExit):
+    with __import__("pytest").raises(SystemExit) as e:
         cli.cmd_campaign_pause(A())
+    assert e.value.code  # sortie non-zéro : erreur API

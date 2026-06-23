@@ -53,10 +53,9 @@ def test_ensure_editable_blocks_none_campaign():
 
 
 def test_ensure_editable_blocks_empty_and_unknown_status():
-    import pytest as _pytest
-    with _pytest.raises(sequence.CampaignActive):
+    with pytest.raises(sequence.CampaignActive):
         sequence.ensure_editable({"status": ""})
-    with _pytest.raises(sequence.CampaignActive):
+    with pytest.raises(sequence.CampaignActive):
         sequence.ensure_editable({"status": "some_new_label"})
 
 

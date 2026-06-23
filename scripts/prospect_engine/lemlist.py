@@ -155,13 +155,15 @@ def update_schedule(key, schedule_id, body):
 
 
 def pause_campaign(key, campaign_id):
-    """Met une campagne en pause (arrête l'envoi). No-op si elle ne tourne pas. Sans body."""
+    """Met une campagne en pause (arrête l'envoi). Sans body. No-op si elle ne tourne pas
+    (doc Lemlist endpoints/campaigns/pause-campaign, consultée 2026-06-23)."""
     return api_call("POST", f"/campaigns/{campaign_id}/pause", key)
 
 
 def start_campaign(key, campaign_id):
-    """Démarre/reprend une campagne (état → running). No-op si déjà running. Sans body. C'est le start
-    campagne-level (moteur d'envoi), distinct du lead-launch (`launch_lead`)."""
+    """Démarre/reprend une campagne (état → running). Sans body. No-op si déjà running (doc Lemlist
+    endpoints/campaigns/start-campaign, consultée 2026-06-23). Start campagne-level (moteur d'envoi),
+    distinct du lead-launch (`launch_lead`)."""
     return api_call("POST", f"/campaigns/{campaign_id}/start", key)
 
 
