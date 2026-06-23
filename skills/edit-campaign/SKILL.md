@@ -1,20 +1,22 @@
 ---
 name: edit-campaign
-description: Déclencher quand l'utilisateur veut modifier une campagne de prospection existante — son ciblage (« affine le ciblage de X », « vise plutôt les Y », « exclus les Z », « resserre l'ICP », « change les filtres », « le ciblage est trop large ») ou sa séquence (« modifie la séquence », « reformule l'icebreaker », « ajoute une relance », « espace les relances », « passe l'étape 2 en LinkedIn », « change l'objet du 1er mail »). Couvre les filtres People DB, le prompt icpFit, et les étapes / timing / canaux de la séquence. Ne pas déclencher pour créer une campagne (→ new-campaign) ni pour le run quotidien (→ prospect-routine) ; modifier la config / l'état ou dupliquer une verticale n'est pas encore couvert.
+description: Déclencher quand l'utilisateur veut modifier une campagne de prospection existante — son ciblage (« affine le ciblage de X », « vise plutôt les Y », « exclus les Z », « resserre l'ICP », « change les filtres »), sa séquence (« modifie la séquence », « reformule l'icebreaker », « ajoute une relance », « espace les relances », « passe l'étape 2 en LinkedIn », « change l'objet du 1er mail »), ou sa config / son état (« mets la campagne en pause », « relance-la », « arrête d'envoyer si on répond », « change le sender », « passe le sourcing à 30 par jour », « active-la pour de vrai »). Couvre les filtres People DB, le prompt icpFit, les étapes / timing / canaux de la séquence, et la config / l'état (pause/reprise, réglages, cadence, flip dry_run). Ne pas déclencher pour créer une campagne (→ new-campaign) ni pour le run quotidien (→ prospect-routine) ; dupliquer une verticale vers un nouveau segment n'est pas encore couvert.
 ---
 
 # edit-campaign — modifier une campagne existante
 
 ## Vue d'ensemble
 
-Modifie une campagne existante sur deux facettes : **le ciblage** (qui on contacte) et **la séquence** (ce
-qu'on dit, dans quel ordre, à quel rythme, sur quel canal). L'utilisateur exprime son intention en langage
-naturel ; toi (Claude de session) tu portes la complexité — tu traduis, tu valides, tu n'écris qu'après son
-accord. Il ne voit jamais un `filterId`, un `stepId` ni un objet JSON.
+Modifie une campagne existante sur trois facettes : **le ciblage** (qui on contacte), **la séquence** (ce
+qu'on dit, dans quel ordre, à quel rythme, sur quel canal) et **la config / l'état** (pause/reprise,
+réglages, cadence du run, mise en route réelle). L'utilisateur exprime son intention en langage naturel ;
+toi (Claude de session) tu portes la complexité — tu traduis, tu valides, tu n'écris qu'après son accord.
+Il ne voit jamais un `filterId`, un `stepId` ni un objet JSON.
 
-Frontière à garder en tête : **le ciblage est 100% local** (filtres + icpFit, lus par le moteur au run,
-Lemlist n'est pas touché) ; **la séquence vit dans Lemlist** et l'éditer la mute par API, sous garde
-(campagne en pause, accord explicite).
+Frontière à garder en tête : **le local** (filtres + icpFit du ciblage, op-config et `dry_run` de la
+config) est lu par le moteur au run, Lemlist n'est pas touché ; **Lemlist** (la séquence, l'état et les
+réglages de campagne) se mute par API, sous garde (preview + confirmation ; pause obligatoire pour éditer
+la séquence).
 
 **Commandes moteur** : via `uv run python scripts/routine.py <cmd>` (jamais `python3`).
 
@@ -73,9 +75,9 @@ et les receipts couvrent). Changer l'icpFit seul ne touche pas le pool — pas d
 d'étapes), timing (délais + fenêtres d'envoi), canal d'une étape. Lemlist reste la source de vérité : on
 lit la séquence live, on la mute par API, on ne stocke jamais la séquence en local.
 
-Gate dur : la campagne ne doit pas tourner. Le moteur refuse toute mutation si `status == running` —
-mets la campagne en pause d'abord (geste séparé). Éditer une séquence en cours d'envoi a un effet non
-documenté sur les leads déjà engagés.
+Gate dur : la campagne ne doit pas tourner. Le moteur refuse toute mutation si `status == running` — mets
+la campagne en pause d'abord — geste séparé, via la facette config / état. Éditer une séquence en cours
+d'envoi a un effet non documenté sur les leads déjà engagés.
 
 Éditer une étape et synchroniser les prompts d'agents locaux est indissociable : une étape ajoutée ou un
 message qui introduit un nouveau `{{var}}` exige un prompt `prompts/<var>.md`, sinon la variable sort vide
@@ -84,17 +86,37 @@ et le lead ne part pas. `verify` garde la couverture en fin de flux.
 Flux détaillé (gate, preview à deux faces, contrat de variables, recreate de canal, résolution du
 schedule) : `references/edit-campaign/sequence-edit.md` — le charger avant d'agir.
 
+## Modifier la config / l'état
+
+Piloter l'état et les réglages d'une campagne, et l'op-config locale du run. Quatre leviers :
+
+| Levier | Nature | Garde |
+|---|---|---|
+| Pause / reprise | Lemlist (`campaign-pause` / `campaign-resume`) | preview + confirmation |
+| Réglages campagne | Lemlist (`update-campaign` : stop-conditions, senders, tracking, autoReview) | preview + confirmation |
+| Op-config locale | `campaign.json` (sourcing_size, models, enrich) | écrit après confirmation |
+| Flip `dry_run` | `campaign.json` (true ↔ false) | garde dure : confirmation explicite, deux sens |
+
+Mutations Lemlist = actions sortantes : preview + confirmation, jamais silencieux. Pas de gate « doit être
+en pause » (pauser/régler est sûr). Le flip `dry_run` à `false` fait charger réellement les leads au
+prochain run — confirmation explicite obligatoire, dans les deux sens. Le **launch** (entrer des leads en
+séquence d'envoi) reste un geste séparé, hors de cette skill.
+
+Flux détaillé (par levier, gardes, résolution des réglages) : `references/edit-campaign/config-state.md`
+— le charger avant d'agir.
+
 ## Périmètre
 
-Couvert : le ciblage (filtres People DB + prompt icpFit) et la séquence (contenu, structure, timing,
-canal). Pas encore couvert :
-- la config et l'état (pause/reprise, réglages campagne, cadence de sourcing, modèles) ;
-- dupliquer une verticale vers un nouveau segment puis ajuster.
+Couvert : le ciblage (filtres + icpFit), la séquence (contenu, structure, timing, canal) et la config /
+l'état (pause/reprise, réglages campagne, op-config locale, flip dry_run). Pas encore couvert : dupliquer
+une verticale vers un nouveau segment puis ajuster.
 
 ## Référence
 
 - Ciblage — craft ICP → filtres People DB : `/lemlist` §3 (filterId / in / out, get-database-filters).
 - Séquence — flux détaillé : `references/edit-campaign/sequence-edit.md` ; craft copy / séquence : `/lemlist`.
+- Config / état — flux détaillé : `references/edit-campaign/config-state.md` ; réglages : `/lemlist`.
 - Contrat icp-check : `args = {prompt_icpFit, sample, model:"haiku"}` → `{verdicts:[{lead, qualifie, raison}]}`.
 - Commandes moteur — ciblage : `resolve`, `source` (renvoie `total`), `status --set edit_in_progress`,
   `cursor --reset`. Séquence : `sequence`, `add-step`, `update-step`, `delete-step`, `edit-schedule`, `verify`.
+  Config / état : `campaign-pause`, `campaign-resume`, `update-campaign`.

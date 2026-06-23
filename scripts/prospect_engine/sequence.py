@@ -10,15 +10,18 @@ class CampaignActive(Exception):
     """La campagne envoie (ou état inconnu) : muter sa séquence est interdit — la mettre en pause d'abord."""
 
 
+EDITABLE_STATES = {"paused", "draft", "ended", "archived", "errors"}
+
+
 def ensure_editable(campaign):
-    """Garde dure avant toute mutation de séquence. Refuse `running` (envoi actif ; éditer pendant l'envoi
-    a un effet non documenté sur les leads en cours) et l'état inconnu (on ne mute pas à l'aveugle). Les
-    autres états (paused, draft, ended, archived, errors) ne sont pas en envoi actif → éditables."""
+    """Garde dure avant toute mutation de séquence. Éditable UNIQUEMENT si `status` est un état connu non
+    en envoi (`EDITABLE_STATES`). Tout le reste bloque — `running` (envoi actif), `None`, `""`, ou un label
+    inconnu : on ne mute jamais à l'aveugle. Renvoie le `status` si éditable."""
     status = (campaign or {}).get("status")
     if status == "running":
         raise CampaignActive("campagne active (running) — mets-la en pause avant d'éditer la séquence")
-    if status is None:
-        raise CampaignActive("état de campagne inconnu — édition refusée par sécurité")
+    if status not in EDITABLE_STATES:
+        raise CampaignActive(f"état de campagne non éditable (status={status!r}) — refusé par sécurité")
     return status
 
 

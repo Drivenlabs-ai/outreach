@@ -50,3 +50,16 @@ def test_summarize_tolerates_missing_steps():
 def test_ensure_editable_blocks_none_campaign():
     with pytest.raises(sequence.CampaignActive):
         sequence.ensure_editable(None)
+
+
+def test_ensure_editable_blocks_empty_and_unknown_status():
+    import pytest as _pytest
+    with _pytest.raises(sequence.CampaignActive):
+        sequence.ensure_editable({"status": ""})
+    with _pytest.raises(sequence.CampaignActive):
+        sequence.ensure_editable({"status": "some_new_label"})
+
+
+def test_ensure_editable_allows_known_safe_states():
+    for s in ("paused", "draft", "ended", "archived", "errors"):
+        assert sequence.ensure_editable({"status": s}) == s

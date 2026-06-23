@@ -15,6 +15,14 @@ def _emit(obj):
     print(json.dumps(obj, ensure_ascii=False))
 
 
+def _emit_result_or_stop(st, res):
+    """Émet le résultat d'une mutation puis sort en code non-zéro si l'API a échoué (status hors 2xx) —
+    la règle « stop on partial failure » devient imposée, pas seulement documentée."""
+    _emit({"status": st, "result": res})
+    if not (200 <= st < 300):
+        raise SystemExit(1)
+
+
 def _key(a):
     return config.read_key(getattr(a, "api_key_file", None) or DEFAULT_KEY)
 
@@ -107,7 +115,9 @@ def _editable_or_stop(key, campaign_id):
 def cmd_sequence(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
-    _, res = lemlist.get_campaign_sequences(key, cfg["campaign_id"])
+    st, res = lemlist.get_campaign_sequences(key, cfg["campaign_id"])
+    if st != 200:
+        raise SystemExit(f"STOP: lecture de la séquence → {st} (lecture KO ; on n'édite pas à l'aveugle)")
     _emit({"steps": sequence.summarize(res)})
 
 
@@ -117,7 +127,7 @@ def cmd_add_step(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.add_step(key, a.sequence_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_update_step(a):
@@ -126,7 +136,7 @@ def cmd_update_step(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.update_step(key, a.sequence_id, a.step_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_delete_step(a):
@@ -134,7 +144,7 @@ def cmd_delete_step(a):
     key = config.read_key(cfg["api_key_file"])
     _editable_or_stop(key, cfg["campaign_id"])
     st, res = lemlist.delete_step(key, a.sequence_id, a.step_id)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
 
 
 def cmd_edit_schedule(a):
@@ -143,7 +153,29 @@ def cmd_edit_schedule(a):
     _editable_or_stop(key, cfg["campaign_id"])
     body = json.loads(Path(a.input).read_text(encoding="utf-8"))
     st, res = lemlist.update_schedule(key, a.schedule_id, body)
-    _emit({"status": st, "result": res})
+    _emit_result_or_stop(st, res)
+
+
+def cmd_campaign_pause(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    st, res = lemlist.pause_campaign(key, cfg["campaign_id"])
+    _emit_result_or_stop(st, res)
+
+
+def cmd_campaign_resume(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    st, res = lemlist.start_campaign(key, cfg["campaign_id"])
+    _emit_result_or_stop(st, res)
+
+
+def cmd_update_campaign(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    body = json.loads(Path(a.input).read_text(encoding="utf-8"))
+    st, res = lemlist.update_campaign(key, cfg["campaign_id"], body)
+    _emit_result_or_stop(st, res)
 
 
 def cmd_cursor(a):
@@ -241,6 +273,9 @@ def build_parser():
     p = sub.add_parser("update-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--step-id", required=True, dest="step_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_update_step)
     p = sub.add_parser("delete-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--step-id", required=True, dest="step_id"); p.set_defaults(fn=cmd_delete_step)
     p = sub.add_parser("edit-schedule"); p.add_argument("--config", required=True); p.add_argument("--schedule-id", required=True, dest="schedule_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_edit_schedule)
+    p = sub.add_parser("campaign-pause"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_campaign_pause)
+    p = sub.add_parser("campaign-resume"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_campaign_resume)
+    p = sub.add_parser("update-campaign"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_update_campaign)
     p = sub.add_parser("cursor"); p.add_argument("--config", required=True); p.add_argument("--reset", action="store_true"); p.add_argument("--set", type=int, default=None, dest="set"); p.set_defaults(fn=cmd_cursor)
     p = sub.add_parser("load-lead"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_load_lead)
     p = sub.add_parser("launch"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_launch)

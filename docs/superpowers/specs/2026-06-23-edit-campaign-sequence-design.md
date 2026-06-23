@@ -112,8 +112,9 @@ prompts, décision de structure) vit en session.
 
 Le gate n'est pas qu'une discipline de skill : les commandes de mutation **lisent l'état de la campagne
 (`get_campaign`) et refusent** (sortie en erreur) si elle tourne. Comme `dry_run` garde `load-lead`, le
-gate garde toute mutation de séquence — impossible à contourner par l'orchestration. (Le champ d'état exact
-indiquant actif/pause est à confirmer au plan via la doc `get_campaign` / `get-campaign-statutes`.)
+gate garde toute mutation de séquence. C'est une garde best-effort (check-then-act, sans API atomique) :
+Lemlist ne bloque côté serveur que `delete` si la campagne tourne ; pour `add`/`update`, le gate client +
+la pause humaine préalable sont la protection. (Le champ `status` — running/paused/… — est lu via `get_campaign`.)
 
 ### Garde sortante
 
@@ -124,8 +125,8 @@ deux faces (séquence + prompts).
 ### Moteur — ajouts (déterministes, modèle C)
 
 - `lemlist` : `add_step(key, sequence_id, body)`, `update_step(key, sequence_id, step_id, body)`,
-  `delete_step(key, sequence_id, step_id)`, `update_schedule(key, schedule_id, body)`,
-  `associate_schedule(key, campaign_id, schedule_id)` — chacun un `api_call` one-liner.
+  `delete_step(key, sequence_id, step_id)`, `update_schedule(key, schedule_id, body)` — chacun un
+  `api_call` one-liner.
 - Une fonction de gate (lit `get_campaign`, renvoie actif/pause) réutilisée par les commandes de mutation.
 - Commandes CLI : une lecture formatée de la séquence (pour l'étape 4, expose `sequence_id` + `step_id` +
   champs), et les mutations gardées (body lu depuis un fichier, comme `load-lead --input`).
@@ -160,8 +161,8 @@ section de skill + référence). Le routeur et le README passent la séquence de
 Partie déterministe testée ; le jugement (NL → mutations, rédaction copy/prompts) vit en session, non testé
 unitairement (comme SP-A / W1).
 
-- Wrappers `add_step` / `update_step` / `delete_step` / `update_schedule` / `associate_schedule` : route,
-  méthode et body corrects (API mockée).
+- Wrappers `add_step` / `update_step` / `delete_step` / `update_schedule` : route, méthode et body corrects
+  (API mockée).
 - Gate : commande de mutation sur campagne active → refus (erreur) sans appel de mutation ; sur campagne en
   pause → l'appel passe.
 - Lecture formatée de séquence : expose `sequence_id`, `step_id`, type, délai, message/objet (mock).
