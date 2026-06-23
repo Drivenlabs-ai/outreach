@@ -36,3 +36,16 @@ def test_status_set_get_roundtrip(tmp_path):
 def test_load_status_default_when_absent(tmp_path):
     assert state.load_status(str(tmp_path)) == {
         "phase1_done": False, "w2_steps": [], "edit_in_progress": False, "last_run": None}
+
+
+def test_set_cursor_writes_page_cursor_and_preserves_rest(tmp_path):
+    state.save_state(str(tmp_path), {"page_cursor": 7, "last_run": "2026-06-15", "history": [{"x": 1}]})
+    assert state.set_cursor(str(tmp_path), 1) == 1
+    st = state.load_state(str(tmp_path))
+    assert st["page_cursor"] == 1
+    assert st["last_run"] == "2026-06-15" and st["history"] == [{"x": 1}]
+
+
+def test_set_cursor_on_absent_state_creates_default(tmp_path):
+    assert state.set_cursor(str(tmp_path / "fresh"), 5) == 5
+    assert state.load_state(str(tmp_path / "fresh")) == {"page_cursor": 5, "last_run": None, "history": []}

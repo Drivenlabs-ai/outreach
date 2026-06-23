@@ -95,6 +95,17 @@ def cmd_source(a):
     _emit(out)
 
 
+def cmd_cursor(a):
+    cfg = config.load_cfg_only(a.config)
+    sd = cfg["state_dir"]
+    if a.reset:
+        _emit({"page_cursor": state.set_cursor(sd, 1)})
+    elif a.set is not None:
+        _emit({"page_cursor": state.set_cursor(sd, a.set)})
+    else:
+        _emit({"page_cursor": state.load_state(sd).get("page_cursor", 1)})
+
+
 # ---------- setup (spec 02) ----------
 
 def cmd_duplicate_campaign(a):
@@ -174,6 +185,7 @@ def build_parser():
     p = sub.add_parser("fetch"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_fetch)
     p = sub.add_parser("dedup-check"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_dedup_check)
     p = sub.add_parser("source"); p.add_argument("--config", required=True); p.add_argument("--target", type=int, default=None); p.set_defaults(fn=cmd_source)
+    p = sub.add_parser("cursor"); p.add_argument("--config", required=True); p.add_argument("--reset", action="store_true"); p.add_argument("--set", type=int, default=None, dest="set"); p.set_defaults(fn=cmd_cursor)
     p = sub.add_parser("load-lead"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_load_lead)
     p = sub.add_parser("launch"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_launch)
     p = sub.add_parser("record-run"); p.add_argument("--config", required=True); p.add_argument("--date", required=True); p.add_argument("--sourced-file", required=True); p.add_argument("--true", type=int, required=True, dest="true"); p.add_argument("--false", type=int, required=True, dest="false"); p.set_defaults(fn=cmd_record_run)

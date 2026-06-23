@@ -74,3 +74,12 @@ def status_set(state_dir, key, value):
 def status_get(state_dir, key=None):
     status = load_status(state_dir)
     return status if key is None else status.get(key)
+
+
+def set_cursor(state_dir, value):
+    """Pose le curseur de page (state.json), écriture atomique. Préserve history/last_run.
+    Seul point d'écriture du curseur hors du run (le run l'avance via save_state au sourcing)."""
+    st = load_state(state_dir)
+    st["page_cursor"] = value
+    save_state(state_dir, st)
+    return value
