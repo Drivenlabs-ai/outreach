@@ -335,3 +335,53 @@ def test_cmd_delete_step_exits_nonzero_on_api_error(monkeypatch):
         config = "x"; sequence_id = "seq_1"; step_id = "stp_x"
     with __import__("pytest").raises(SystemExit):
         cli.cmd_delete_step(A())
+
+
+def test_cmd_campaign_pause_calls_wrapper(monkeypatch, capsys):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    cap = {}
+    monkeypatch.setattr(lemlist, "pause_campaign", lambda key, cid: cap.update(cid=cid) or (200, {"state": "paused"}))
+    class A: config = "x"
+    cli.cmd_campaign_pause(A())
+    assert cap["cid"] == "cam_1" and json.loads(capsys.readouterr().out)["status"] == 200
+
+
+def test_cmd_campaign_resume_calls_start(monkeypatch, capsys):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    cap = {}
+    monkeypatch.setattr(lemlist, "start_campaign", lambda key, cid: cap.update(cid=cid) or (200, {"state": "running"}))
+    class A: config = "x"
+    cli.cmd_campaign_resume(A())
+    assert cap["cid"] == "cam_1"
+    assert json.loads(capsys.readouterr().out)["status"] == 200  # passe bien par _emit_result_or_stop
+
+
+def test_cmd_update_campaign_passes_body(monkeypatch, tmp_path, capsys):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    cap = {}
+    monkeypatch.setattr(lemlist, "update_campaign", lambda key, cid, body: cap.update(cid=cid, body=body) or (200, {}))
+    body = tmp_path / "b.json"; body.write_text(json.dumps({"stopOnEmailReplied": True}))
+    class A:
+        config = "x"; input = str(body)
+    cli.cmd_update_campaign(A())
+    assert cap["cid"] == "cam_1" and cap["body"] == {"stopOnEmailReplied": True}
+
+
+def test_cmd_campaign_pause_exits_nonzero_on_error(monkeypatch, capsys):
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "pause_campaign", lambda key, cid: (403, "blocked"))
+    class A: config = "x"
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_campaign_pause(A())

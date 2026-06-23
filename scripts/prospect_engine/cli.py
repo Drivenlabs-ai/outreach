@@ -156,6 +156,28 @@ def cmd_edit_schedule(a):
     _emit_result_or_stop(st, res)
 
 
+def cmd_campaign_pause(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    st, res = lemlist.pause_campaign(key, cfg["campaign_id"])
+    _emit_result_or_stop(st, res)
+
+
+def cmd_campaign_resume(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    st, res = lemlist.start_campaign(key, cfg["campaign_id"])
+    _emit_result_or_stop(st, res)
+
+
+def cmd_update_campaign(a):
+    cfg = config.load_cfg_only(a.config)
+    key = config.read_key(cfg["api_key_file"])
+    body = json.loads(Path(a.input).read_text(encoding="utf-8"))
+    st, res = lemlist.update_campaign(key, cfg["campaign_id"], body)
+    _emit_result_or_stop(st, res)
+
+
 def cmd_cursor(a):
     cfg = config.load_cfg_only(a.config)
     sd = cfg["state_dir"]
@@ -251,6 +273,9 @@ def build_parser():
     p = sub.add_parser("update-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--step-id", required=True, dest="step_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_update_step)
     p = sub.add_parser("delete-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--step-id", required=True, dest="step_id"); p.set_defaults(fn=cmd_delete_step)
     p = sub.add_parser("edit-schedule"); p.add_argument("--config", required=True); p.add_argument("--schedule-id", required=True, dest="schedule_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_edit_schedule)
+    p = sub.add_parser("campaign-pause"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_campaign_pause)
+    p = sub.add_parser("campaign-resume"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_campaign_resume)
+    p = sub.add_parser("update-campaign"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_update_campaign)
     p = sub.add_parser("cursor"); p.add_argument("--config", required=True); p.add_argument("--reset", action="store_true"); p.add_argument("--set", type=int, default=None, dest="set"); p.set_defaults(fn=cmd_cursor)
     p = sub.add_parser("load-lead"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_load_lead)
     p = sub.add_parser("launch"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.add_argument("--confirm", action="store_true"); p.set_defaults(fn=cmd_launch)
