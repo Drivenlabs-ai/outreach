@@ -1,6 +1,6 @@
 ---
 name: prospect-routine
-description: Déclencher quand l'utilisateur veut faire tourner la prospection outbound — lancer le run / sourcing quotidien d'une campagne existante ("run la prospection agences immo", "source des leads pour X", "fais tourner la campagne Y aujourd'hui", "lance la routine prospection"), ou piloter/auditer une verticale de prospection sans préciser l'action. Créer une campagne de zéro est couvert par le skill new-campaign ; modifier une campagne existante n'est pas encore couvert.
+description: Déclencher quand l'utilisateur veut faire tourner la prospection outbound — lancer le run / sourcing quotidien d'une campagne existante ("run la prospection agences immo", "source des leads pour X", "fais tourner la campagne Y aujourd'hui", "lance la routine prospection"), ou piloter/auditer une verticale de prospection sans préciser l'action. Créer une campagne de zéro est couvert par le skill new-campaign ; affiner le ciblage d'une campagne existante par le skill edit-campaign ; modifier la séquence, la config ou dupliquer une verticale n'est pas encore couvert.
 ---
 
 # prospect-routine — routeur
@@ -17,7 +17,8 @@ font. Le run quotidien est sa vraie valeur ; créer et modifier sont délégués
 |---|---|
 | faire tourner le sourcing du jour | Run quotidien (ci-dessous) |
 | créer une campagne de zéro | skill `new-campaign` (il se déclenche seul ; sinon, l'y pointer) |
-| modifier une campagne existante | pas encore couvert — le dire, ne rien muter à la main |
+| modifier le ciblage d'une campagne | skill `edit-campaign` (filtres + icpFit ; il se déclenche seul) |
+| modifier la séquence / la config / dupliquer | pas encore couvert — le dire, ne rien muter à la main |
 
 Avant un run, résoudre la campagne : `resolve --registry <racine Prospection/campaigns-registry.json>
 --slug <ce que dit l'utilisateur>` → `campaign_id` + `config_path`. Slug introuvable → demander lequel
@@ -51,8 +52,12 @@ seul, y renvoyer ; ne pas réimplémenter la création ici.
 
 ## Modifier
 
-Modifier une campagne existante (affiner l'ICP, ajouter une étape, changer le timing) n'est pas encore
-construit — cela suppose des mutations de séquence Lemlist qui n'existent pas. Le dire à l'utilisateur,
+Affiner le ciblage d'une campagne existante (filtres People DB + prompt icpFit) est porté par le skill
+`edit-campaign` — il se déclenche seul sur « affine le ciblage », « vise plutôt X », « exclus les Y » ;
+sinon l'y renvoyer. 100% local, validé sur échantillon avant tout commit.
+
+Modifier la séquence (étapes, messages, timing), la config ou l'état (pause/reprise, réglages, cadence),
+ou dupliquer une verticale vers un nouveau segment n'est pas encore construit. Le dire à l'utilisateur ;
 ne pas muter la séquence à la main.
 
 ## Référence

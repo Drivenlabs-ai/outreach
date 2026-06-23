@@ -44,7 +44,7 @@ def source(key, filters, cursor, target, *, exclude=()):
         search = search + [{"filterId": "leadLinkedInUrl", "in": [], "out": list(exclude)}]
     st, res = lemlist.search_people(key, search, cursor, target)
     if st != 200 or not isinstance(res, dict):
-        return {"candidats": [], "limitation": None, "next_cursor": cursor + 1, "exhausted": True}
+        return {"candidats": [], "limitation": None, "next_cursor": cursor + 1, "exhausted": True, "total": None}
     results = res.get("results") or []
     candidats, have = [], set()
     for r in results:
@@ -55,4 +55,4 @@ def source(key, filters, cursor, target, *, exclude=()):
         candidats.append(lead)
         have.add(url)
     return {"candidats": candidats[:target], "limitation": res.get("limitation"),
-            "next_cursor": cursor + 1, "exhausted": len(results) < target}
+            "next_cursor": cursor + 1, "exhausted": len(results) < target, "total": res.get("total")}

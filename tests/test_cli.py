@@ -167,6 +167,37 @@ def test_cmd_source_warns_on_contacts_fetch_failure(monkeypatch, tmp_path, capsy
     assert state.load_state(str(sd))["page_cursor"] == 2
 
 
+def test_cli_cursor_reset_sets_to_one(tmp_path):
+    from prospect_engine import state
+    cfg = _campaign(tmp_path)
+    sd = json.loads(Path(cfg).read_text())["state_dir"]
+    state.save_state(sd, {"page_cursor": 9, "last_run": None, "history": []})
+    r = run("cursor", "--config", cfg, "--reset")
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout) == {"page_cursor": 1}
+    assert state.load_state(sd)["page_cursor"] == 1
+
+
+def test_cli_cursor_set_then_get(tmp_path):
+    cfg = _campaign(tmp_path)
+    rs = run("cursor", "--config", cfg, "--set", "12")
+    assert rs.returncode == 0, rs.stderr
+    assert json.loads(rs.stdout) == {"page_cursor": 12}
+    rg = run("cursor", "--config", cfg)
+    assert rg.returncode == 0, rg.stderr
+    assert json.loads(rg.stdout) == {"page_cursor": 12}
+
+
+def test_cli_cursor_leaves_status_untouched(tmp_path):
+    from prospect_engine import state
+    cfg = _campaign(tmp_path)
+    sd = json.loads(Path(cfg).read_text())["state_dir"]
+    state.status_set(sd, "phase1_done", True)
+    run("cursor", "--config", cfg, "--reset")
+    assert state.load_status(sd) == {
+        "phase1_done": True, "w2_steps": [], "edit_in_progress": False, "last_run": None}
+
+
 def test_cmd_source_warns_on_exclusion_cap(monkeypatch, tmp_path, capsys):
     from prospect_engine import cli, lemlist, sourcing
     sd = tmp_path / "state"

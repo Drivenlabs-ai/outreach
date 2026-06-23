@@ -86,3 +86,16 @@ def test_loaded_urls_caps_at_limit():
     contacts = [{"linkedinUrl": f"https://lk/{i}", "campaigns": [{"campaignId": "cam_1"}]}
                 for i in range(10)]
     assert len(sourcing.loaded_urls(contacts, "cam_1", cap=3)) == 3
+
+
+def test_source_exposes_total(monkeypatch):
+    monkeypatch.setattr(lemlist, "search_people",
+                        lambda *a, **k: (200, {"results": [_r("https://lk/a")], "limitation": 1, "total": 15576}))
+    out = sourcing.source("KEY", [], cursor=1, target=1)
+    assert out["total"] == 15576
+
+
+def test_source_total_none_on_error(monkeypatch):
+    monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: (400, "Parameter filters is invalid"))
+    out = sourcing.source("KEY", [], cursor=1, target=1)
+    assert out["total"] is None and out["exhausted"] is True
