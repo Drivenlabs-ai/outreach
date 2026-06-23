@@ -212,3 +212,31 @@ def test_update_schedule_route_method_body(monkeypatch):
     lemlist.update_schedule("KEY", "skd_1", {"start": "09:00", "end": "17:00"})
     assert cap["method"] == "PATCH" and cap["route"] == "/schedules/skd_1"
     assert cap["body"] == {"start": "09:00", "end": "17:00"}
+
+
+def test_pause_campaign_route_method(monkeypatch):
+    cap = {}
+    def fake(method, route, key, body=None, **kw):
+        cap.update(method=method, route=route, body=body); return 200, {"state": "paused"}
+    monkeypatch.setattr(lemlist, "api_call", fake)
+    lemlist.pause_campaign("KEY", "cam_1")
+    assert cap["method"] == "POST" and cap["route"] == "/campaigns/cam_1/pause" and cap["body"] is None
+
+
+def test_start_campaign_route_method(monkeypatch):
+    cap = {}
+    def fake(method, route, key, body=None, **kw):
+        cap.update(method=method, route=route, body=body); return 200, {"state": "running"}
+    monkeypatch.setattr(lemlist, "api_call", fake)
+    lemlist.start_campaign("KEY", "cam_1")
+    assert cap["method"] == "POST" and cap["route"] == "/campaigns/cam_1/start" and cap["body"] is None
+
+
+def test_update_campaign_route_method_body(monkeypatch):
+    cap = {}
+    def fake(method, route, key, body=None, **kw):
+        cap.update(method=method, route=route, body=body); return 200, {}
+    monkeypatch.setattr(lemlist, "api_call", fake)
+    lemlist.update_campaign("KEY", "cam_1", {"stopOnEmailReplied": True})
+    assert cap["method"] == "PATCH" and cap["route"] == "/campaigns/cam_1"
+    assert cap["body"] == {"stopOnEmailReplied": True}

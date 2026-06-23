@@ -154,6 +154,23 @@ def update_schedule(key, schedule_id, body):
     return api_call("PATCH", f"/schedules/{schedule_id}", key, body)
 
 
+def pause_campaign(key, campaign_id):
+    """Met une campagne en pause (arrête l'envoi). No-op si elle ne tourne pas. Sans body."""
+    return api_call("POST", f"/campaigns/{campaign_id}/pause", key)
+
+
+def start_campaign(key, campaign_id):
+    """Démarre/reprend une campagne (état → running). No-op si déjà running. Sans body. C'est le start
+    campagne-level (moteur d'envoi), distinct du lead-launch (`launch_lead`)."""
+    return api_call("POST", f"/campaigns/{campaign_id}/start", key)
+
+
+def update_campaign(key, campaign_id, body):
+    """Édite les réglages d'une campagne (PATCH). `body` pass-through (stop-conditions, sendUserIds,
+    tracking, autoReview… — cf. doc live `/lemlist`). Aucun schéma hardcodé ici."""
+    return api_call("PATCH", f"/campaigns/{campaign_id}", key, body)
+
+
 def get_lead(key, lead_id):
     """Lit un lead par id (renvoie ses `variables`) — fonctionne sans email, pour la garde launch."""
     return api_call("GET", f"/leads?id={lead_id}", key)
