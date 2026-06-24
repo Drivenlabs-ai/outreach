@@ -29,11 +29,11 @@ Le pont entre les trois : le **`campaign_id`**. SSoT strict — Lemlist porte la
 
 ## Installation
 
-Via la marketplace interne Drivenlabs :
+Via la marketplace publique Drivenlabs :
 
 ```bash
-/plugin marketplace add Drivenlabs-ai/plugins-internal
-/plugin install outreach@drivenlabs-ai-internal
+/plugin marketplace add Drivenlabs-ai/plugins
+/plugin install outreach@drivenlabs-ai
 ```
 
 En développement local :
