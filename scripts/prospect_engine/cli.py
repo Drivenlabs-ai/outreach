@@ -46,8 +46,9 @@ def cmd_fetch(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
     _, camp = lemlist.get_campaign(key, cfg["campaign_id"])
+    _, schedules = lemlist.get_campaign_schedules(key, cfg["campaign_id"])
     leads = lemlist.get_campaign_leads(key, cfg["campaign_id"])
-    _emit({"campaign": camp, "leads": leads, "counts": {"leads": len(leads)}})
+    _emit({"campaign": camp, "schedules": schedules, "leads": leads, "counts": {"leads": len(leads)}})
 
 
 def cmd_dedup_check(a):
@@ -156,18 +157,27 @@ def cmd_edit_schedule(a):
     _emit_result_or_stop(st, res)
 
 
+def _noop_or_stop(st, res, idempotent_marker):
+    """Émet le résultat d'une bascule d'état de campagne. Absorbe en no-op le 400 d'idempotence de
+    Lemlist (`idempotent_marker` présent dans le corps : pauser une campagne déjà arrêtée, reprendre une
+    déjà active) ; tout autre échec applique la règle stop-on-error. Le statut renvoyé par `get_campaign`
+    ne distingue pas fiablement running d'un brouillon — c'est le 400 qui fait foi."""
+    if st == 400 and idempotent_marker in str(res).lower():
+        _emit({"status": 200, "result": {"noop": True}})
+        return
+    _emit_result_or_stop(st, res)
+
+
 def cmd_campaign_pause(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
-    st, res = lemlist.pause_campaign(key, cfg["campaign_id"])
-    _emit_result_or_stop(st, res)
+    _noop_or_stop(*lemlist.pause_campaign(key, cfg["campaign_id"]), "not running")
 
 
 def cmd_campaign_resume(a):
     cfg = config.load_cfg_only(a.config)
     key = config.read_key(cfg["api_key_file"])
-    st, res = lemlist.start_campaign(key, cfg["campaign_id"])
-    _emit_result_or_stop(st, res)
+    _noop_or_stop(*lemlist.start_campaign(key, cfg["campaign_id"]), "already running")
 
 
 def cmd_update_campaign(a):

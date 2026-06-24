@@ -100,6 +100,13 @@ def get_campaign(key, campaign_id):
     return api_call("GET", f"/campaigns/{campaign_id}", key)
 
 
+def get_campaign_schedules(key, campaign_id):
+    """Fenêtres d'envoi d'une campagne (GET .../schedules) — chaque schedule porte `_id` (skd_…) +
+    start/end/weekdays/timezone/secondsToWait. Le `_id` alimente `edit-schedule` (seule source : ni
+    `get_campaign` ni les séquences ne l'exposent)."""
+    return api_call("GET", f"/campaigns/{campaign_id}/schedules", key)
+
+
 def get_campaign_leads(key, campaign_id):
     return paginate(key, f"/campaigns/{campaign_id}/leads/", {"limit": 100})
 
@@ -155,15 +162,17 @@ def update_schedule(key, schedule_id, body):
 
 
 def pause_campaign(key, campaign_id):
-    """Met une campagne en pause (arrête l'envoi). Sans body. No-op si elle ne tourne pas
-    (doc Lemlist endpoints/campaigns/pause-campaign, consultée 2026-06-23)."""
+    """Met une campagne en pause (POST .../pause, arrête l'envoi). Sans body. Pass-through : l'API
+    renvoie 400 « can't pause campaigns that are not running » si elle ne tourne pas — l'idempotence
+    (no-op si non running) est assurée par `cli.cmd_campaign_pause`, pas ici."""
     return api_call("POST", f"/campaigns/{campaign_id}/pause", key)
 
 
 def start_campaign(key, campaign_id):
-    """Démarre/reprend une campagne (état → running). Sans body. No-op si déjà running (doc Lemlist
-    endpoints/campaigns/start-campaign, consultée 2026-06-23). Start campagne-level (moteur d'envoi),
-    distinct du lead-launch (`launch_lead`)."""
+    """Démarre/reprend une campagne (POST .../start, état → running). Sans body. Pass-through : l'API
+    renvoie 400 « can't start campaigns that are already running » si elle tourne déjà — l'idempotence
+    (no-op si déjà running) est assurée par `cli.cmd_campaign_resume`. Start campagne-level (moteur
+    d'envoi), distinct du lead-launch (`launch_lead`)."""
     return api_call("POST", f"/campaigns/{campaign_id}/start", key)
 
 

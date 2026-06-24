@@ -138,6 +138,14 @@ def test_get_campaign_sequences_route(monkeypatch):
     assert cap["route"] == "/campaigns/cam_1/sequences"
 
 
+def test_get_campaign_schedules_route(monkeypatch):
+    cap = {}
+    monkeypatch.setattr(lemlist, "api_call",
+                        lambda m, route, k, body=None, **kw: cap.update(method=m, route=route) or (200, [{"_id": "skd_1"}]))
+    lemlist.get_campaign_schedules("KEY", "cam_1")
+    assert cap["method"] == "GET" and cap["route"] == "/campaigns/cam_1/schedules"
+
+
 def test_get_lead_by_id_route(monkeypatch):
     cap = {}
     monkeypatch.setattr(lemlist, "api_call",

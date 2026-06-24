@@ -19,12 +19,14 @@ schedule) se lisent sur la doc live via `/lemlist` — ne pas les deviner.
    Avertir si des leads sont déjà en cours de séquence (effet non documenté).
 6. **appliquer** (le body de chaque mutation est écrit dans un fichier, lu via `--input`) :
    - contenu / objet / délai → `update-step --config <config_path> --sequence-id <id> --step-id <id>
-     --input <chemin>`.
+     --input <chemin>` (le body inclut toujours `type`, immuable — sinon l'API rejette en 400).
    - ajout → `add-step --config <config_path> --sequence-id <id> --input <chemin>` (body avec `type` +
      champs requis selon le type ; position via `index`).
    - retrait → `delete-step --config <config_path> --sequence-id <id> --step-id <id>`.
-   - réordonnancement → `update-step` avec `index`.
-   - timing fenêtres → résoudre le `schedule_id` (via `/lemlist` : depuis la campagne), puis
+   - réordonnancement → l'`index` d'une étape existante n'est pas modifiable (le PATCH l'ignore en
+     silence) : retirer l'étape (`delete-step`) puis la recréer à la position voulue (`add-step` avec
+     `index`, honoré à la création).
+   - timing fenêtres → le `schedule_id` (skd_…) se lit dans la sortie de `fetch` (champ `schedules`), puis
      `edit-schedule --config <config_path> --schedule-id <id> --input <chemin>`.
    - canal → `type` immuable : `delete-step` puis `add-step` (recreate), en re-posant `index`, `delay`,
      contenu. Le signaler explicitement dans le preview.

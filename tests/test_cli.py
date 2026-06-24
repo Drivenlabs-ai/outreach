@@ -405,3 +405,59 @@ def test_cmd_campaign_pause_exits_nonzero_on_error(monkeypatch, capsys):
     with __import__("pytest").raises(SystemExit) as e:
         cli.cmd_campaign_pause(A())
     assert e.value.code  # sortie non-zéro : erreur API
+
+
+def test_cmd_campaign_pause_noop_on_not_running_400(monkeypatch, capsys):
+    # Idempotence : pauser une campagne déjà arrêtée → l'API 400 « not running » est absorbé en no-op, exit 0.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "pause_campaign",
+                        lambda key, cid: (400, '{"error":"You can\'t pause campaigns that are not running."}'))
+    class A: config = "x"
+    cli.cmd_campaign_pause(A())
+    out = json.loads(capsys.readouterr().out)
+    assert out["status"] == 200 and out["result"]["noop"] is True
+
+
+def test_cmd_campaign_resume_noop_on_already_running_400(monkeypatch, capsys):
+    # Idempotence : reprendre une campagne déjà active → l'API 400 « already running » est absorbé en no-op.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "start_campaign",
+                        lambda key, cid: (400, '{"error":"You can\'t start campaigns that are already running."}'))
+    class A: config = "x"
+    cli.cmd_campaign_resume(A())
+    out = json.loads(capsys.readouterr().out)
+    assert out["status"] == 200 and out["result"]["noop"] is True
+
+
+def test_cmd_campaign_resume_exits_nonzero_on_error(monkeypatch, capsys):
+    # Un 400 NON-idempotence (autre message) n'est pas absorbé : stop-on-error.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "start_campaign", lambda key, cid: (400, '{"error":"something else"}'))
+    class A: config = "x"
+    with __import__("pytest").raises(SystemExit) as e:
+        cli.cmd_campaign_resume(A())
+    assert e.value.code  # sortie non-zéro : erreur API non-idempotence
+
+
+def test_cmd_fetch_includes_schedules(monkeypatch, capsys):
+    # fetch expose les schedules (le skd_… alimente edit-schedule).
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"_id": cid, "status": "paused"}))
+    monkeypatch.setattr(lemlist, "get_campaign_schedules", lambda key, cid: (200, [{"_id": "skd_1", "start": "09:00"}]))
+    monkeypatch.setattr(lemlist, "get_campaign_leads", lambda key, cid: [{"_id": "lea_1"}])
+    class A: config = "x"
+    cli.cmd_fetch(A())
+    out = json.loads(capsys.readouterr().out)
+    assert out["schedules"][0]["_id"] == "skd_1" and out["counts"]["leads"] == 1
