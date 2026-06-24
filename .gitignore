@@ -1,5 +1,8 @@
 # Secrets de plugin (clés API) — jamais versionnés
 .claude/*.local.md
+*.local.md
+.env
+.env.*
 
 # Python
 __pycache__/

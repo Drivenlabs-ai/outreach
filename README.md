@@ -39,7 +39,7 @@ Via la marketplace interne Drivenlabs :
 En développement local :
 
 ```bash
-claude --plugin-dir /Users/alexandrebouchez/Code/drivenlabs-ai/outreach
+claude --plugin-dir /chemin/vers/outreach
 ```
 
 Clé API Lemlist : `~/.claude/linkedin-prospect.local.md` (`lemlist_api_key:`), hors repo.
