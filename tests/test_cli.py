@@ -448,6 +448,32 @@ def test_cmd_campaign_resume_exits_nonzero_on_error(monkeypatch, capsys):
     assert e.value.code  # sortie non-zéro : erreur API non-idempotence
 
 
+def test_cmd_campaign_pause_exits_nonzero_on_non_marker_400(monkeypatch, capsys):
+    # Symétrique de resume : un 400 sans marqueur d'idempotence n'est pas absorbé.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "pause_campaign", lambda key, cid: (400, '{"error":"something else"}'))
+    class A: config = "x"
+    with __import__("pytest").raises(SystemExit) as e:
+        cli.cmd_campaign_pause(A())
+    assert e.value.code  # sortie non-zéro : erreur API non-idempotence
+
+
+def test_cmd_campaign_pause_marker_outside_error_field_not_absorbed(monkeypatch):
+    # Ancrage : le marqueur n'est cherché que dans le champ `error`, pas ailleurs dans le corps.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "pause_campaign",
+                        lambda key, cid: (400, '{"error":"bad request","context":"a step not running yet"}'))
+    class A: config = "x"
+    with __import__("pytest").raises(SystemExit):
+        cli.cmd_campaign_pause(A())  # « not running » hors du champ error → non absorbé
+
+
 def test_cmd_fetch_includes_schedules(monkeypatch, capsys):
     # fetch expose les schedules (le skd_… alimente edit-schedule).
     from prospect_engine import cli, config, lemlist
@@ -461,3 +487,18 @@ def test_cmd_fetch_includes_schedules(monkeypatch, capsys):
     cli.cmd_fetch(A())
     out = json.loads(capsys.readouterr().out)
     assert out["schedules"][0]["_id"] == "skd_1" and out["counts"]["leads"] == 1
+
+
+def test_cmd_fetch_schedules_error_degrades_to_empty(monkeypatch, capsys):
+    # Lecture schedules KO (non-200) → champ `schedules` ramené à [] (jamais une string d'erreur), exit 0.
+    from prospect_engine import cli, config, lemlist
+    cfg = {"api_key_file": "x", "campaign_id": "cam_1"}
+    monkeypatch.setattr(config, "load_cfg_only", lambda p: cfg)
+    monkeypatch.setattr(config, "read_key", lambda p: "KEY")
+    monkeypatch.setattr(lemlist, "get_campaign", lambda key, cid: (200, {"_id": cid, "status": "paused"}))
+    monkeypatch.setattr(lemlist, "get_campaign_schedules", lambda key, cid: (403, "blocked"))
+    monkeypatch.setattr(lemlist, "get_campaign_leads", lambda key, cid: [])
+    class A: config = "x"
+    cli.cmd_fetch(A())
+    out = json.loads(capsys.readouterr().out)
+    assert out["schedules"] == []

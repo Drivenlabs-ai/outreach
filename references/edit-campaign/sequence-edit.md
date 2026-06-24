@@ -19,7 +19,7 @@ schedule) se lisent sur la doc live via `/lemlist` — ne pas les deviner.
    Avertir si des leads sont déjà en cours de séquence (effet non documenté).
 6. **appliquer** (le body de chaque mutation est écrit dans un fichier, lu via `--input`) :
    - contenu / objet / délai → `update-step --config <config_path> --sequence-id <id> --step-id <id>
-     --input <chemin>` (le body inclut toujours `type`, immuable — sinon l'API rejette en 400).
+     --input <chemin>` (le body inclut toujours `type`, requis — sinon l'API rejette en 400).
    - ajout → `add-step --config <config_path> --sequence-id <id> --input <chemin>` (body avec `type` +
      champs requis selon le type ; position via `index`).
    - retrait → `delete-step --config <config_path> --sequence-id <id> --step-id <id>`.
