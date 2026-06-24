@@ -284,7 +284,7 @@ def cmd_log(a):
 # ---------- parser ----------
 
 def build_parser():
-    ap = argparse.ArgumentParser(prog="routine.py", description="Moteur prospect-routine (IO déterministe).")
+    ap = argparse.ArgumentParser(prog="routine.py", description="Moteur outreach (IO déterministe).")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("prepare"); p.add_argument("--config", required=True); p.add_argument("--date", required=True); p.set_defaults(fn=cmd_prepare)

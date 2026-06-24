@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""prospect-routine — moteur déterministe (IO Lemlist + état machine, zéro LLM).
+"""outreach — moteur déterministe (IO Lemlist + état machine, zéro LLM).
 
 Shim CLI : entrée stable `python3 scripts/routine.py <cmd>`. Toute la logique vit dans le package
 `prospect_engine/` (api / state / receipts / dedup / delivery / config / cli).

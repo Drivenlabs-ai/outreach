@@ -22,7 +22,7 @@ for f in "$SRC"/*.workflow.js; do
   name="$(basename "$f")"
   if [ ! -f "$DST/$name" ] || ! cmp -s "$f" "$DST/$name"; then
     cp "$f" "$DST/$name"
-    echo "prospect-routine: workflow synchronisé → $name"
+    echo "outreach: workflow synchronisé → $name"
   fi
 done
 exit 0

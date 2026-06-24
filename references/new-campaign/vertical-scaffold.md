@@ -14,11 +14,11 @@ Prospection/<Vertical>/
 # Pas de eval-dataset/holdout : icp-check teste l'icpFit sur un échantillon live au setup (spec 04).
 ```
 
-L'état machine vit ailleurs (`~/.claude/prospect-routine/<slug>/` : state / status / receipts / log) — jamais dans le Drive.
+L'état machine vit ailleurs (`~/.claude/outreach/<slug>/` : state / status / receipts / log) — jamais dans le Drive.
 
 **Chemins (à passer en `--registry` / `--config`)** :
 - registre : `<racine Prospection>/campaigns-registry.json` (Drive, sibling des dossiers verticale) — cf. architecture §2.
-- `state_dir` : `~/.claude/prospect-routine/<slug>/` · clé API : `~/.claude/linkedin-prospect.local.md`.
+- `state_dir` : `~/.claude/outreach/<slug>/` · clé API : `~/.claude/linkedin-prospect.local.md`.
 
 ## Forme de `campaign.json` (draft écrit en §1, ids remplis en §3)
 
@@ -27,7 +27,7 @@ L'état machine vit ailleurs (`~/.claude/prospect-routine/<slug>/` : state / sta
   "campaign_id": null,                 // TU le remplis en §3 (sortie de duplicate-campaign) avant register
   "slug": "<slug>",
   "list_id": null,                     // TU le remplis en §3 (sortie de create-list) avant register
-  "state_dir": "~/.claude/prospect-routine/<slug>",
+  "state_dir": "~/.claude/outreach/<slug>",
   "api_key_file": "~/.claude/linkedin-prospect.local.md",
   "filters": [ /* filtres People DB issus de la phase 1 : { "filterId": …, "in": […], "out": […] } */ ],
   "models": { "scoring": "haiku", "writing": "sonnet", "judge": "sonnet" },

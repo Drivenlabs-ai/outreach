@@ -27,6 +27,6 @@ try: print(json.load(sys.stdin).get("aligned"))
 except Exception: print("")' 2>/dev/null)"
 
 if [ "$aligned" = "False" ]; then
-  echo "⚠️ prospect-routine — dérive prompts ↔ séquence détectée sur $cfg : $out"
+  echo "⚠️ outreach — dérive prompts ↔ séquence détectée sur $cfg : $out"
 fi
 exit 0

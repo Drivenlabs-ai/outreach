@@ -1,9 +1,9 @@
 ---
-name: prospect-routine
+name: driven-outreach
 description: Déclencher quand l'utilisateur veut faire tourner la prospection outbound — lancer le run / sourcing quotidien d'une campagne existante ("run la prospection agences immo", "source des leads pour X", "fais tourner la campagne Y aujourd'hui", "lance la routine prospection"), ou piloter/auditer une verticale de prospection sans préciser l'action. Créer une campagne de zéro est couvert par le skill new-campaign ; affiner le ciblage, la séquence ou la config d'une campagne existante par le skill edit-campaign ; dupliquer une verticale vers un nouveau segment n'est pas encore couvert.
 ---
 
-# prospect-routine — routeur
+# driven-outreach — routeur
 
 ## Vue d'ensemble
 
@@ -56,7 +56,7 @@ Pipeline en ordre fixe, chaque étape nourrit la suivante :
 6. `record-run` + `log` → curseur, historique, journal.
 
 Ce résumé ne suffit pas à exécuter : les flags exacts, l'assemblage des args du workflow, `dry_run`, le
-`launch` gardé et la gestion d'erreur vivent dans `references/prospect-routine/run.md`.
+`launch` gardé et la gestion d'erreur vivent dans `references/driven-outreach/run.md`.
 
 ## Créer / Modifier
 
@@ -76,7 +76,7 @@ référence : mieux vaut une de trop qu'une de moins.**
 
 | Intention | Charge avant d'agir |
 |---|---|
-| Run quotidien | `references/prospect-routine/run.md` |
+| Run quotidien | `references/driven-outreach/run.md` |
 | Créer une campagne | skill `new-campaign` (+ sa réf `references/new-campaign/vertical-scaffold.md`) |
 | Modifier le ciblage / la séquence / la config | skill `edit-campaign` (séquence → `references/edit-campaign/sequence-edit.md` ; config → `references/edit-campaign/config-state.md`) |
 

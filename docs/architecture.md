@@ -1,11 +1,11 @@
 ---
-titre: prospect-routine v2 — architecture v1 (squelette)
+titre: outreach v2 — architecture v1 (squelette)
 statut: à valider (sortie /senior-architect)
 date: 2026-06-12
 auteurs: [Alexandre Bouchez, Claude]
 ---
 
-# prospect-routine v2 — architecture v1
+# outreach v2 — architecture v1
 
 Découle de [`design.md`](design.md) (le *pourquoi* + décisions). Ici : le *comment* — frontières de composants, arborescence, flux, dépendances, contrats, points d'extension. À poser avant le build spec-par-spec. **Moteur de livraison = « charger puis lancer » (C)**.
 
@@ -41,9 +41,9 @@ flowchart TD
 ## 2. Arborescence
 
 ```
-Code/drivenlabs-ai/prospect-routine/                # plugin (repo git, source de vérité)
+Code/drivenlabs-ai/outreach/                        # plugin (repo git, source de vérité)
 ├── .claude-plugin/plugin.json                      # manifeste
-├── skills/prospect-routine/SKILL.md                # ROUTER (mince, trigger langage naturel)
+├── skills/driven-outreach/SKILL.md                 # ROUTER (mince, trigger langage naturel)
 ├── skills/new-campaign/SKILL.md                    # W1 — créer une campagne (skill piloté par Claude)
 ├── scripts/
 │   ├── routine.py                                  # moteur — sous-commandes atomiques (cf. §5)
@@ -76,7 +76,7 @@ Drivenlabs Team/Drivenlabs/Prospection/             # intelligence métier (SoT,
     └── prompts/ : icpFit.md + <step>.md (1 par message)
     # (pas de dataset : icp-check teste l'icpFit sur un échantillon live au setup, cf. spec 04)
 
-~/.claude/prospect-routine/<slug>/                   # état machine (jamais Drive)
+~/.claude/outreach/<slug>/                           # état machine (jamais Drive)
 ├── state.json        (page_cursor, history)
 ├── status.json       (machine d'état / reprise)
 ├── receipts.jsonl    (ledger reçus, idempotence)

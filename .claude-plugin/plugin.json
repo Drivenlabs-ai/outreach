@@ -1,13 +1,13 @@
 {
-  "name": "prospect-routine",
-  "version": "0.1.0",
+  "name": "outreach",
+  "version": "1.0.0",
   "description": "Pipeline outbound Lemlist multi-verticales : sourcing → ICP → rédaction → livraison (modèle « charger puis lancer »). Routeur + workflows + moteur déterministe.",
   "author": {
     "name": "Alexandre Bouchez",
     "email": "contact@alexandre-bouchez.fr"
   },
-  "homepage": "https://github.com/Drivenlabs-ai/prospect-routine",
-  "repository": "https://github.com/Drivenlabs-ai/prospect-routine",
+  "homepage": "https://github.com/Drivenlabs-ai/outreach",
+  "repository": "https://github.com/Drivenlabs-ai/outreach",
   "license": "AGPL-3.0-only",
   "keywords": ["lemlist", "outbound", "prospection", "sourcing", "icp", "drivenlabs"]
 }

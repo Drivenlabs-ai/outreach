@@ -1,4 +1,4 @@
-# Run quotidien — séquence détaillée (référence prospect-routine)
+# Run quotidien — séquence détaillée (référence driven-outreach)
 
 Chargé par le routeur pour le run. Le run charge des leads en review ; il ne lance jamais (le launch est
 une étape séparée, plus bas). Pré-requis : campagne résolue (`resolve` a donné `campaign_id` +

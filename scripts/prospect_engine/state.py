@@ -1,6 +1,6 @@
 """État machine local — jamais dans le Drive.
 
-Deux fichiers dans `~/.claude/prospect-routine/<slug>/` :
+Deux fichiers dans `~/.claude/outreach/<slug>/` :
   state.json  : page_cursor (position dans le pool People DB), history, last_run
   status.json : phases de reprise des workflows (phase1_done, w2_steps, edit_in_progress, last_run)
 

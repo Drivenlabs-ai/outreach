@@ -103,7 +103,7 @@ Lit les **reçus** de la verticale et écarte les leads déjà chargés pour cet
 
 ## 5. État machine — trois fichiers, un dossier
 
-`~/.claude/prospect-routine/<slug>/` (jamais le Drive) :
+`~/.claude/outreach/<slug>/` (jamais le Drive) :
 
 | Fichier | Contenu | Écrit par |
 |---|---|---|
@@ -120,7 +120,7 @@ Lit les **reçus** de la verticale et écarte les leads déjà chargés pour cet
 ```jsonc
 // campaign.json (verticale, Drive) — lu par le moteur
 { "campaign_id":"cam_…", "slug":"agence-immo", "list_id":"clt_…",
-  "state_dir":"~/.claude/prospect-routine/agence-immo",
+  "state_dir":"~/.claude/outreach/agence-immo",
   "api_key_file":"~/.claude/linkedin-prospect.local.md",
   "sequence":["icebreaker","followup","closing"],
   "dry_run":false, "sourcing_size":50 }

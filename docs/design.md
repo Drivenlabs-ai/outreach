@@ -1,11 +1,11 @@
 ---
-titre: prospect-routine v2 — architecture (routeur + workflows + SSoT Lemlist)
+titre: outreach v2 — architecture (routeur + workflows + SSoT Lemlist)
 statut: v1 en cadrage — pivot livraison « variables de lead », stress-testé (§11)
 date: 2026-06-12
 auteurs: [Alexandre Bouchez, Claude]
 ---
 
-# prospect-routine v2 — design à valider
+# outreach v2 — design à valider
 
 > **Révision 2026-06-19 — graders → `icp-check`.** Les « 2 graders bloquants » (GATE 1 ≥ 95 % sur
 > holdout, GATE 2 juge Sonnet, datasets labellisés) décrits plus bas (§4, §11.6) ont été **abandonnés
@@ -14,7 +14,7 @@ auteurs: [Alexandre Bouchez, Claude]
 > → sign-off humain). Référence : `docs/specs/04-icp-check.md`. Les mentions « graders / GATE / holdout »
 > ci-dessous sont la **vision initiale, superseded** — conservées pour l'historique.
 
-Refonte de `/prospect-routine` : passer d'un moteur mono-workflow à un **routeur** qui orchestre setup pro (via le métier `/lemlist`), run, et édition ciblée — avec un découpage **single source of truth** strict entre Lemlist et le local.
+Refonte de `/driven-outreach` : passer d'un moteur mono-workflow à un **routeur** qui orchestre setup pro (via le métier `/lemlist`), run, et édition ciblée — avec un découpage **single source of truth** strict entre Lemlist et le local.
 
 > **Commente directement dans ce fichier** (sous chaque décision, ou en annotation). Je rédige le plan d'implémentation v1 une fois les 4 décisions tranchées.
 
@@ -22,7 +22,7 @@ Refonte de `/prospect-routine` : passer d'un moteur mono-workflow à un **routeu
 
 ## ✅ Décisions à valider (le cœur)
 
-1. **Skills GTM** : `/lemlist` comme **hub métier unique** (il distille déjà la doctrine des 38 skills l3mpire) + vendoriser paresseusement **2-3 templates structurés** (`icp-definer`, `outbound-campaign-architect`, `people-finder`) sous `prospect-routine/references/gtm/`. → **NE PAS installer les 38.**
+1. **Skills GTM** : `/lemlist` comme **hub métier unique** (il distille déjà la doctrine des 38 skills l3mpire) + vendoriser paresseusement **2-3 templates structurés** (`icp-definer`, `outbound-campaign-architect`, `people-finder`) sous `outreach/references/gtm/`. → **NE PAS installer les 38.**
    - [x] Validé.
 
 2. **SSoT structure** : **Lemlist = source de vérité de la structure de campagne** (séquence, canaux, délais, leads + variables). Le local ne la copie jamais. Un script `fetch` lit ; des scripts de **modif ciblée** écrivent.
@@ -91,14 +91,14 @@ Conséquence directe : un *changement de timing/flow* est une **mutation dans Le
 
 ---
 
-## 3. Routage — `/prospect-routine` comme routeur mince
+## 3. Routage — `/driven-outreach` comme routeur mince
 
 ```mermaid
 flowchart TB
   C1["fais une nouvelle campagne pour X"] --> R
   C2["modifie la campagne X : +etape · ICP · timing"] --> R
   C3["run le sourcing pour la campagne X"] --> R
-  R["/prospect-routine — ROUTEUR mince"]
+  R["/driven-outreach — ROUTEUR mince"]
   R --> W1["Workflow NEW-CAMPAIGN · interactif"]
   R --> ED["Skills EDIT cibles + scripts modif"]
   R --> W3["Workflow SOURCING · autonome · param campaign_id"]
@@ -145,10 +145,10 @@ flowchart TB
 | Option | Implications |
 |---|---|
 | **Installer les 38** | ✗ réplique la doctrine `/lemlist` (drift dans le temps) · ✗ 38 descriptions chargées à chaque session (taxe contexte) · ✗ collisions de triggers (les `copywriting-*` se déclenchent sur toute rédaction) · ✗ voix générique EN hors-contexte · ✗ 38 fichiers à resynchroniser avec l'upstream |
-| **`/lemlist` = hub unique** (recommandé) | ✓ zéro réplication (SSoT doctrine) · ✓ zéro taxe session · ✓ `/prospect-routine` choisit le craft à chaque étape et l'enveloppe de ta voix · ✗ les formats *structurés* de 2-3 skills ne sont pas invocables en standalone |
+| **`/lemlist` = hub unique** (recommandé) | ✓ zéro réplication (SSoT doctrine) · ✓ zéro taxe session · ✓ `/driven-outreach` choisit le craft à chaque étape et l'enveloppe de ta voix · ✗ les formats *structurés* de 2-3 skills ne sont pas invocables en standalone |
 | **Vendoriser 2-3 templates clés** à la demande | ✓ récupère les formats structurés que le playbook en prose n'a pas · chargés uniquement pendant un setup/edit · ✗ une mini-copie à garder à jour |
 
-**Arbitrage proposé** : `/lemlist` comme hub + vendoriser `icp-definer`, `outbound-campaign-architect`, `people-finder` sous `prospect-routine/references/gtm/`, chargés à la demande.
+**Arbitrage proposé** : `/lemlist` comme hub + vendoriser `icp-definer`, `outbound-campaign-architect`, `people-finder` sous `outreach/references/gtm/`, chargés à la demande.
 
 ---
 
@@ -182,7 +182,7 @@ flowchart TB
 flowchart LR
   subgraph V1["v1 — coeur livrable"]
     direction TB
-    a["Routeur /prospect-routine : 3 commandes"]
+    a["Routeur /driven-outreach : 3 commandes"]
     b["campaign.json + resolver campaign_id ou slug"]
     c["script fetch : snapshot Lemlist read-only"]
     e["Workflow LEMLIST-SETUP + flux defaut multicanal"]
