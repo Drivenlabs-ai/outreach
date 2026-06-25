@@ -25,7 +25,7 @@ const VERDICT_SCHEMA = {
   required: ["qualifie", "raison"],
 };
 
-const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "location", "headline", "summary", "linkedinUrl"];
+const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "location", "headline", "industry", "summary", "linkedinUrl"];
 
 function prospectBlock(lead) {
   const lines = PROSPECT_FIELDS.filter((k) => lead && lead[k]).map((k) => `- ${k}: ${lead[k]}`);

@@ -34,6 +34,11 @@ test("buildScorePrompt embeds the interpolated template and the candidate facts"
   assert.match(out, /Lyon/);
 });
 
+test("buildScorePrompt surfaces the lead industry when present", () => {
+  const out = core.buildScorePrompt("x", { fullName: "Marie Roy", industry: "Real Estate" });
+  assert.match(out, /industry: Real Estate/);
+});
+
 test("VERDICT_SCHEMA requires qualifie and raison", () => {
   assert.deepEqual(core.VERDICT_SCHEMA.required, ["qualifie", "raison"]);
   assert.equal(core.VERDICT_SCHEMA.properties.qualifie.type, "boolean");

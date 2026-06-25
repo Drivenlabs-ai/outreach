@@ -99,3 +99,49 @@ def test_source_total_none_on_error(monkeypatch):
     monkeypatch.setattr(lemlist, "search_people", lambda *a, **k: (400, "Parameter filters is invalid"))
     out = sourcing.source("KEY", [], cursor=1, target=1)
     assert out["total"] is None and out["exhausted"] is True
+
+
+# --- projection : titre depuis l'expérience courante + industrie ---
+# People DB ne renvoie plus `title` au top-level ; le titre vit dans `experiences[].title`.
+# L'expérience courante = celle dont `company_name` == `current_exp_company_name`.
+
+def test_project_jobtitle_from_current_experience():
+    raw = {
+        "lead_linkedin_url": "https://lk/a", "full_name": "Jade M",
+        "current_exp_company_name": "ALEXANDRY IMMOBILIER",
+        "current_exp_company_subindustry": "Real Estate",
+        "experiences": [
+            {"company_name": "ANCIENNE SCI", "title": "Stagiaire", "order_in_profile": 2, "date_to": "2020"},
+            {"company_name": "ALEXANDRY IMMOBILIER", "title": "Négociatrice Immobilier", "order_in_profile": 1},
+        ],
+        "lead_id": "a",
+    }
+    lead = sourcing._project(raw)
+    assert lead["jobTitle"] == "Négociatrice Immobilier"
+    assert lead["industry"] == "Real Estate"
+
+
+def test_project_jobtitle_falls_back_to_title_normalized():
+    raw = {"lead_linkedin_url": "u", "current_exp_company_name": "CO", "lead_id": "u",
+           "experiences": [{"company_name": "CO", "title_normalized": "Real Estate Agent", "order_in_profile": 1}]}
+    assert sourcing._project(raw)["jobTitle"] == "Real Estate Agent"
+
+
+def test_project_jobtitle_falls_back_to_most_recent_when_no_company_match():
+    raw = {"lead_linkedin_url": "u", "current_exp_company_name": "INTROUVABLE", "lead_id": "u",
+           "experiences": [
+               {"company_name": "X", "title": "Récent", "order_in_profile": 1},
+               {"company_name": "Y", "title": "Ancien", "order_in_profile": 3},
+           ]}
+    assert sourcing._project(raw)["jobTitle"] == "Récent"
+
+
+def test_project_industry_falls_back_to_company_industry():
+    raw = {"lead_linkedin_url": "u", "lead_id": "u",
+           "current_exp_company_industry": "Real Estate and Equipment Rental Services"}
+    assert sourcing._project(raw)["industry"] == "Real Estate and Equipment Rental Services"
+
+
+def test_project_no_experiences_uses_top_level_title():
+    raw = {"lead_linkedin_url": "u", "title": "Gérant", "lead_id": "u"}
+    assert sourcing._project(raw)["jobTitle"] == "Gérant"

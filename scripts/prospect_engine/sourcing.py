@@ -19,16 +19,35 @@ def loaded_urls(contacts, campaign_id, cap=EXCLUDE_CAP):
     return set(urls[:cap])
 
 
+def _current_experience(r):
+    """L'expérience courante d'un résultat People DB. People DB ne renvoie pas le titre au
+    top-level : il vit dans `experiences[]`. La courante est celle dont `company_name` ==
+    `current_exp_company_name` (top-level) ; fallback la plus récente (`order_in_profile` le
+    plus petit), sinon {}."""
+    exps = [e for e in (r.get("experiences") or []) if isinstance(e, dict)]
+    if not exps:
+        return {}
+    cur_co = r.get("current_exp_company_name")
+    for e in exps:
+        if cur_co and e.get("company_name") == cur_co:
+            return e
+    return min(exps, key=lambda e: e["order_in_profile"] if isinstance(e.get("order_in_profile"), int) else 1_000_000)
+
+
 def _project(r):
-    """Résultat brut People DB → forme lead (linkedinUrl, fullName, jobTitle, companyName, …)."""
+    """Résultat brut People DB → forme lead (linkedinUrl, fullName, jobTitle, companyName, …).
+    `jobTitle` vient de l'expérience courante (titre absent du top-level) ; `industry` de la
+    sous-industrie de la société courante."""
+    exp = _current_experience(r)
     return {
         "linkedinUrl": r.get("lead_linkedin_url") or "",
         "fullName": r.get("full_name") or "",
-        "jobTitle": r.get("title") or r.get("title_normalized") or "",
+        "jobTitle": exp.get("title") or exp.get("title_normalized") or r.get("title") or r.get("title_normalized") or "",
         "companyName": r.get("current_exp_company_name") or r.get("company_name") or "",
         "location": r.get("location") or "",
         "summary": r.get("summary") or "",
         "headline": r.get("headline") or "",
+        "industry": r.get("current_exp_company_subindustry") or r.get("current_exp_company_industry") or "",
         "people_db_id": str(r.get("lead_id") or ""),
     }
 
