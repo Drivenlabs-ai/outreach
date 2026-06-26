@@ -60,6 +60,10 @@ ROUTEUR (déterministe — moteur)
 Les **filtres** vivent dans `campaign.json` (config de sourcing = intelligence locale, pas structure
 de campagne). Lecture du `limitation` = respect du quota natif (pas de throttle custom).
 
+**`source --sample`** : lit une page **sans persister le curseur** — mesurer le rendement (densité de
+décideurs) sans consommer le pool. Même sortie (`total` + échantillon). C'est la primitive de la
+calibration du ciblage à la création / l'édition. Méthode : `references/calibration.md`.
+
 ## 3. Le workflow (`workflows/sourcing.workflow.js`)
 
 ```js

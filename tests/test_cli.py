@@ -121,6 +121,30 @@ def test_cmd_source_persists_advanced_cursor(monkeypatch, tmp_path):
     assert state.load_state(str(sd))["page_cursor"] == 2
 
 
+def test_cmd_source_sample_does_not_persist_cursor(monkeypatch, tmp_path, capsys):
+    # `--sample` : mesurer sans consommer. Renvoie l'échantillon + total, laisse le curseur intact.
+    from prospect_engine import cli, lemlist, state
+    sd = tmp_path / "state"
+    keyfile = tmp_path / "k.md"
+    keyfile.write_text("lemlist_api_key: X")
+    cfg = tmp_path / "campaign.json"
+    cfg.write_text(json.dumps({"state_dir": str(sd), "api_key_file": str(keyfile),
+                               "campaign_id": "cam_1", "filters": [], "sourcing_size": 5}))
+    state.save_state(str(sd), {"page_cursor": 7, "last_run": None, "history": []})
+    monkeypatch.setattr(lemlist, "get_contacts", lambda key: [])
+    monkeypatch.setattr(lemlist, "search_people",
+                        lambda key, filters, page, size: (200, {"results": [{"lead_linkedin_url": "https://lk/a", "lead_id": "a"}], "limitation": 1, "total": 99}))
+
+    class A:
+        config = str(cfg)
+        target = 1
+        sample = True
+    cli.cmd_source(A())
+    out = json.loads(capsys.readouterr().out)
+    assert out["total"] == 99 and len(out["candidats"]) == 1   # renvoie bien l'échantillon
+    assert state.load_state(str(sd))["page_cursor"] == 7        # mais ne brûle pas le curseur
+
+
 def test_cmd_source_excludes_campaign_members(monkeypatch, tmp_path):
     from prospect_engine import cli, lemlist, state
     sd = tmp_path / "state"

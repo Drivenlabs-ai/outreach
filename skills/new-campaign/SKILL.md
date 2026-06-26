@@ -75,15 +75,20 @@ la phase 1, rédige :
 Garde : ne pas écraser un fichier d'intelligence existant sans confirmation. (Le hook `PostToolUse` lance
 `verify` à chaque écriture de fichier campagne — la dérive prompts ↔ séquence remonte aussitôt.)
 
-### 2. icp-check — aligner le prompt icpFit
+### 2. Caler le ciblage (rendement des filtres + alignement icpFit)
 
-Boucle jusqu'à ce que le jugement Haiku colle à l'intention :
-1. `source --config <campaign.json> --target 15` → échantillon.
-2. Lance le workflow **icp-check** : `args = { prompt_icpFit: <contenu de prompts/icpFit.md>, sample:
-   <candidats>, model: "haiku" }` — `sample` = le tableau `candidats` renvoyé par `source`.
-3. Lis les `verdicts`, compare chacun à l'ICP visé, repère les ratés → édite `prompts/icpFit.md` →
-   relance. Boucle jugée à la main, bornée (pas de seuil automatique, pas de boucle infinie).
-4. Sign-off : l'utilisateur valide l'alignement avant de continuer.
+Cale les deux étages du ciblage avant d'aller plus loin : les **filtres** (rendement — assez de décideurs
+sourcés) et le **prompt icpFit** (le tri fin). La boucle tourne en coulisses ; ne fais émerger qu'un
+arbitrage métier réel. Méthode complète + doctrine UX : `references/calibration.md` — la charger avant d'agir.
+
+En bref :
+1. `source --config <campaign.json> --sample --target 20` → échantillon + `total`, sans toucher le curseur.
+2. Workflow **icp-check** (`args = { prompt_icpFit, sample, model: "haiku" }`) → `verdicts` ; rendement =
+   qualifiés / échantillon.
+3. Rendement bas → recale les filtres (séniorité + taille, **jamais le titre**) ; ratés de jugement → édite
+   `prompts/icpFit.md`. Ré-échantillonne. Boucle bornée, jugée d'après l'ICP.
+4. Tranche seul ; ne remonte que portée↔précision (fondu dans le gate de la phase 1) ou une audience trop
+   petite. Clos par un récap en clair (filtres retenus = le filet large ; le vrai tri, c'est l'IA).
 
 ### 3. W2 — créer la campagne Lemlist
 
@@ -136,3 +141,4 @@ tourner ; le launch reste un geste séparé et gardé, hors de W1.
 
 Détail du scaffold de verticale (arbre des fichiers, forme de `campaign.json`, id du template de flux
 par défaut, contrat de variables) : `references/new-campaign/vertical-scaffold.md`.
+Calibration du ciblage (rendement des filtres + tri icpFit, doctrine UX) : `references/calibration.md`.

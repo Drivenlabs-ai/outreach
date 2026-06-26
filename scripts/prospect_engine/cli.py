@@ -102,8 +102,10 @@ def cmd_source(a):
         print(f"avertissement: exclusion plafonnée à {sourcing.EXCLUDE_CAP} (plafond filtre out) — "
               "les membres de campagne au-delà ne sont pas exclus", file=sys.stderr)
     out = sourcing.source(key, cfg.get("filters", []), cursor, target, exclude=exclude)
-    st["page_cursor"] = out["next_cursor"]
-    state.save_state(cfg["state_dir"], st)
+    # `--sample` : mesurer sans consommer (calibration du rendement) — on ne persiste pas le curseur.
+    if not getattr(a, "sample", False):
+        st["page_cursor"] = out["next_cursor"]
+        state.save_state(cfg["state_dir"], st)
     _emit(out)
 
 
@@ -291,7 +293,7 @@ def build_parser():
     p = sub.add_parser("resolve"); p.add_argument("--registry", required=True); p.add_argument("--slug"); p.add_argument("--campaign-id", dest="campaign_id"); p.set_defaults(fn=cmd_resolve)
     p = sub.add_parser("fetch"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_fetch)
     p = sub.add_parser("dedup-check"); p.add_argument("--config", required=True); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_dedup_check)
-    p = sub.add_parser("source"); p.add_argument("--config", required=True); p.add_argument("--target", type=int, default=None); p.set_defaults(fn=cmd_source)
+    p = sub.add_parser("source"); p.add_argument("--config", required=True); p.add_argument("--target", type=int, default=None); p.add_argument("--sample", action="store_true", help="échantillonne sans avancer le curseur (calibration)"); p.set_defaults(fn=cmd_source)
     p = sub.add_parser("sequence"); p.add_argument("--config", required=True); p.set_defaults(fn=cmd_sequence)
     p = sub.add_parser("add-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_add_step)
     p = sub.add_parser("update-step"); p.add_argument("--config", required=True); p.add_argument("--sequence-id", required=True, dest="sequence_id"); p.add_argument("--step-id", required=True, dest="step_id"); p.add_argument("--input", required=True); p.set_defaults(fn=cmd_update_step)

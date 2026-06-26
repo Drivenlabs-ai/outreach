@@ -40,17 +40,21 @@ Affine qui une campagne cible. Deux leviers, tous deux locaux :
 3. comprendre  reformuler l'intention jusqu'à être sûr de ce qui change dans le ciblage.
 4. traduire    nouveaux filtres People DB (craft /lemlist §3 ; valider filterId/valeurs via
                 get-database-filters) et/ou icpFit ajusté. Ne rien écrire encore.
-5. valider     status --config <config_path> --set edit_in_progress=true
-                source --config <config_path> --target <N> → taille du nouveau pool (total) + échantillon
-                  total 0 ou exhausted → filtre trop étroit ou invalide : corriger, ne pas committer.
-                workflow icp-check : args = { prompt_icpFit: <icpFit ajusté>, sample: <candidats>,
-                  model: "haiku" } → lire les verdicts, comparer à l'ICP visé, itérer. Boucle bornée, accord humain.
+5. caler       status --config <config_path> --set edit_in_progress=true
+                Calibration du rendement, en coulisses (méthode + doctrine UX : references/calibration.md) :
+                source --config <config_path> --sample --target <N> → taille du pool (total) + échantillon,
+                  SANS avancer le curseur. total 0 ou exhausted → filtre invalide : corriger, ne pas committer.
+                workflow icp-check ({ prompt_icpFit: <icpFit ajusté>, sample, model: "haiku" }) →
+                  rendement = qualifiés / échantillon. Bas → recale les filtres (séniorité + taille, jamais
+                  le titre) et/ou l'icpFit, ré-échantillonne. Boucle bornée, jugée d'après l'ICP ; ne remonte
+                  qu'un vrai arbitrage (portée↔précision, ou audience trop petite).
                 abandon à ce stade → status --config <config_path> --set edit_in_progress=false (rien n'a été écrit)
 6. committer   après accord explicite : écrire les nouveaux filters (campaign.json) + le nouvel icpFit.md.
                 filtres changés → cursor --config <config_path> --reset (cf. Règle du curseur pour le pourquoi)
                 icpFit seul modifié → pas de reset (le pool est inchangé)
                 status --config <config_path> --set edit_in_progress=false
-7. confirmer   résumer : ancien → nouveau ciblage, nouvelle taille de pool, état du curseur.
+7. confirmer   résumer en clair : qui la campagne vise désormais + le récap lisible des filtres retenus (le
+                filet large ; le vrai tri, c'est l'IA ensuite). Jamais de filterId ni de pourcentage.
 ```
 
 ### Règle du curseur
@@ -113,10 +117,12 @@ une verticale vers un nouveau segment puis ajuster.
 
 ## Référence
 
-- Ciblage — craft ICP → filtres People DB : `/lemlist` §3 (filterId / in / out, get-database-filters).
+- Ciblage — calibration du rendement (méthode + doctrine UX) : `references/calibration.md` ; craft ICP →
+  filtres People DB : `/lemlist` §3 (filterId / in / out, get-database-filters).
 - Séquence — flux détaillé : `references/edit-campaign/sequence-edit.md` ; craft copy / séquence : `/lemlist`.
 - Config / état — flux détaillé : `references/edit-campaign/config-state.md` ; réglages : `/lemlist`.
 - Contrat icp-check : `args = {prompt_icpFit, sample, model:"haiku"}` → `{verdicts:[{lead, qualifie, raison}]}`.
-- Commandes moteur — ciblage : `resolve`, `source` (renvoie `total`), `status --set edit_in_progress`,
-  `cursor --reset`. Séquence : `sequence`, `add-step`, `update-step`, `delete-step`, `edit-schedule`, `verify`.
+- Commandes moteur — ciblage : `resolve`, `source` (renvoie `total` ; `--sample` = mesure sans avancer le
+  curseur), `status --set edit_in_progress`, `cursor --reset`. Séquence : `sequence`, `add-step`,
+  `update-step`, `delete-step`, `edit-schedule`, `verify`.
   Config / état : `campaign-pause`, `campaign-resume`, `update-campaign`.
