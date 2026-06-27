@@ -39,6 +39,15 @@ test("buildScorePrompt surfaces the lead industry when present", () => {
   assert.match(out, /industry: Real Estate/);
 });
 
+test("buildScorePrompt surfaces company description and audience (activity authority)", () => {
+  const out = core.buildScorePrompt("{{companyDescription}} / {{companyAudience}}", {
+    fullName: "Marie Roy", companyDescription: "Agence de transaction résidentielle", companyAudience: "B2C",
+  });
+  assert.match(out, /companyDescription: Agence de transaction résidentielle/);
+  assert.match(out, /companyAudience: B2C/);
+  assert.match(out, /Agence de transaction résidentielle \/ B2C/); // interpolated in template too
+});
+
 test("VERDICT_SCHEMA requires qualifie and raison", () => {
   assert.deepEqual(core.VERDICT_SCHEMA.required, ["qualifie", "raison"]);
   assert.equal(core.VERDICT_SCHEMA.properties.qualifie.type, "boolean");

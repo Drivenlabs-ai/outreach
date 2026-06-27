@@ -145,3 +145,35 @@ def test_project_industry_falls_back_to_company_industry():
 def test_project_no_experiences_uses_top_level_title():
     raw = {"lead_linkedin_url": "u", "title": "Gérant", "lead_id": "u"}
     assert sourcing._project(raw)["jobTitle"] == "Gérant"
+
+
+def test_project_company_description_and_audience_from_current_experience():
+    raw = {
+        "lead_linkedin_url": "u", "current_exp_company_name": "CO", "lead_id": "u",
+        "experiences": [
+            {"company_name": "CO", "title": "Gérant", "order_in_profile": 1,
+             "company_description": "Agence de transaction immobilière résidentielle.",
+             "business_business_customer": "B2C"},
+        ],
+    }
+    lead = sourcing._project(raw)
+    assert lead["companyDescription"] == "Agence de transaction immobilière résidentielle."
+    assert lead["companyAudience"] == "B2C"
+
+
+def test_project_company_description_truncated_to_300():
+    raw = {
+        "lead_linkedin_url": "u", "current_exp_company_name": "CO", "lead_id": "u",
+        "experiences": [
+            {"company_name": "CO", "title": "Gérant", "order_in_profile": 1,
+             "company_description": "x" * 500},
+        ],
+    }
+    assert len(sourcing._project(raw)["companyDescription"]) == 300
+
+
+def test_project_company_fields_empty_when_absent():
+    raw = {"lead_linkedin_url": "u", "title": "Gérant", "lead_id": "u"}
+    lead = sourcing._project(raw)
+    assert lead["companyDescription"] == ""
+    assert lead["companyAudience"] == ""

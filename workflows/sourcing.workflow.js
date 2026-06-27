@@ -49,7 +49,7 @@ const VERDICT_SCHEMA = {
 
 // ---- lead identity + prompt assembly ----
 
-const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "location", "headline", "industry", "summary", "linkedinUrl"];
+const PROSPECT_FIELDS = ["fullName", "jobTitle", "companyName", "companyDescription", "companyAudience", "location", "headline", "industry", "summary", "linkedinUrl"];
 
 function leadId(lead) { return (lead && (lead.linkedinUrl || lead.people_db_id)) || ""; }
 function leadLabel(lead) { return (lead && lead.fullName) || leadId(lead); }

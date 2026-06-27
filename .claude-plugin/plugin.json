@@ -1,6 +1,6 @@
 {
   "name": "outreach",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Pipeline outbound Lemlist multi-verticales : sourcing → ICP → rédaction → livraison (modèle « charger puis lancer »). Routeur + workflows + moteur déterministe.",
   "author": {
     "name": "Alexandre Bouchez",

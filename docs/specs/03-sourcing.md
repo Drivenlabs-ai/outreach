@@ -53,7 +53,7 @@ ROUTEUR (déterministe — moteur)
 | Élément | Détail |
 |---|---|
 | `lemlist.search_people(key, filters, page, size)` | wrapper brut |
-| `sourcing.source(key, filters, cursor, target, *, exclude=())` | lit **une page** du pool à la position `cursor` (ordre stable), **exclut les leads déjà en campagne** via le filtre natif `{filterId:"leadLinkedInUrl", in:[], out:[…]}` (+ filet client) ; **projette** chaque résultat vers la forme lead (`linkedinUrl, fullName, jobTitle, companyName…`) ; le curseur avance d'une page |
+| `sourcing.source(key, filters, cursor, target, *, exclude=())` | lit **une page** du pool à la position `cursor` (ordre stable), **exclut les leads déjà en campagne** via le filtre natif `{filterId:"leadLinkedInUrl", in:[], out:[…]}` (+ filet client) ; **projette** chaque résultat vers la forme lead (`linkedinUrl, fullName, jobTitle, companyName, companyDescription, companyAudience (B2C/B2B), industry…`, depuis l'expérience courante ; `companyDescription`/`companyAudience` décrivent l'activité réelle de la société, signaux d'autorité pour le tri résidentiel vs commercial) ; le curseur avance d'une page |
 | `sourcing.loaded_urls(contacts, campaign_id, cap=900)` · `lemlist.get_contacts(key)` | set des `linkedinUrl` déjà en campagne (borné sous le plafond `out` ~1000), depuis les contacts Lemlist ; `get_contacts` → `None` sur échec → sourcing dégradé sans exclusion, avec avertissement |
 | Sortie | `{candidats[], limitation, next_cursor, exhausted}` |
 

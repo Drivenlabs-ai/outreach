@@ -36,14 +36,18 @@ def _current_experience(r):
 
 def _project(r):
     """Résultat brut People DB → forme lead (linkedinUrl, fullName, jobTitle, companyName, …).
-    `jobTitle` vient de l'expérience courante (titre absent du top-level) ; `industry` de la
-    sous-industrie de la société courante."""
+    `jobTitle`, `companyDescription` et `companyAudience` viennent de l'expérience courante (absents
+    du top-level) ; `industry` de la sous-industrie de la société courante. `companyDescription` et
+    `companyAudience` (B2C/B2B) décrivent l'activité réelle de la société : signaux d'autorité pour
+    qualifier le métier (résidentiel vs commercial)."""
     exp = _current_experience(r)
     return {
         "linkedinUrl": r.get("lead_linkedin_url") or "",
         "fullName": r.get("full_name") or "",
         "jobTitle": exp.get("title") or exp.get("title_normalized") or r.get("title") or r.get("title_normalized") or "",
         "companyName": r.get("current_exp_company_name") or r.get("company_name") or "",
+        "companyDescription": (exp.get("company_description") or "")[:300],
+        "companyAudience": exp.get("business_business_customer") or "",
         "location": r.get("location") or "",
         "summary": r.get("summary") or "",
         "headline": r.get("headline") or "",
