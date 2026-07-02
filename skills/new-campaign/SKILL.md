@@ -66,10 +66,11 @@ Lemlist (§3) et avant le flip `dry_run` (§5).
 Dans le dossier verticale (`Prospection/<Vertical>/`), guidé par la craft `/lemlist` + les sorties de
 la phase 1, rédige :
 - `icp.md` · `persona.md` · `pain-points.md` · `value-proposition.md` · `triggers.md`
-- `prompts/icpFit.md` (qualification) + un `prompts/<step>.md` par message de la séquence — les noms de
-  fichiers = clés de variables de la séquence (cf. Référence, contrat de variables). À ce stade la
-  campagne n'existe pas encore : reprends les clés connues du template par défaut
-  (`icebreaker` / `followup` / `closing`) ; `verify` (§3) réconcilie avec la séquence réelle.
+- `prompts/icpFit.md` (qualification) — écrit ici. Les prompts de **copy** (un `prompts/<step>.md` par
+  message : `icebreaker` / `followup` / `closing` du template par défaut) s'écrivent en déléguant à
+  `craft-copy`, en mode express : l'angle est déjà verrouillé en phase 1, donc peu d'allers-retours, et
+  l'utilisateur voit la copy candidate avant qu'elle soit gardée. Les noms de fichiers = clés de variables
+  de la séquence (cf. Référence, contrat de variables) ; `verify` (§3) réconcilie avec la séquence réelle.
 - `campaign.json` draft (forme en Référence ; `dry_run: true`, ids `null`).
 
 Garde : ne pas écraser un fichier d'intelligence existant sans confirmation. (Le hook `PostToolUse` lance

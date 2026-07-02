@@ -26,17 +26,18 @@ Trois types d'outils, frontière nette entre déterministe et jugement IA :
 
 Ne jamais muter Lemlist à la main : passer par le moteur, via la brique de l'intention.
 
-## Trois intentions
+## Les intentions
 
 | L'utilisateur veut… | Destination |
 |---|---|
 | faire tourner le sourcing du jour | Run quotidien (ci-dessous) |
 | créer une campagne de zéro | skill `new-campaign` |
 | modifier le ciblage, la séquence ou la config d'une campagne | skill `edit-campaign` |
+| affûter / réécrire la copy d'un message (icebreaker, relance, clôture) | skill `craft-copy` |
 | dupliquer une verticale vers un nouveau segment | pas encore couvert — le dire, ne rien muter à la main |
 
-`new-campaign` et `edit-campaign` se déclenchent seuls sur leur intention ; s'ils ne l'ont pas fait, l'y
-renvoyer. Demande sans action précisée (« occupe-toi de la prospection X ») → proposer le run du jour, la
+`new-campaign`, `edit-campaign` et `craft-copy` se déclenchent seuls sur leur intention ; s'ils ne l'ont
+pas fait, l'y renvoyer. Demande sans action précisée (« occupe-toi de la prospection X ») → proposer le run du jour, la
 valeur par défaut.
 
 Avant un run, résoudre la campagne : `resolve --registry <racine Prospection/campaigns-registry.json>
@@ -63,9 +64,12 @@ Ce résumé ne suffit pas à exécuter : les flags exacts, l'assemblage des args
 - **Créer** une campagne → skill `new-campaign` (recherche ICP/angle interactive, fichiers d'intelligence,
   création Lemlist, smoke test).
 - **Modifier le ciblage, la séquence ou la config / l'état** d'une campagne existante → skill
-  `edit-campaign`. Ciblage (filtres + icpFit) : local. Séquence (contenu/structure/timing/canal) et config /
-  état (pause/reprise, réglages, cadence, flip dry_run) : mutations Lemlist gardées (preview + confirmation)
-  ou éditions locales ; prompts resynchronisés pour la séquence.
+  `edit-campaign`. Ciblage (filtres + icpFit) : local. Séquence (structure/timing/canal/champs statiques) et
+  config / état (pause/reprise, réglages, cadence, flip dry_run) : mutations Lemlist gardées (preview +
+  confirmation) ou éditions locales.
+- **Affûter / réécrire la copy d'un message** (icebreaker, relance, clôture) → skill `craft-copy` :
+  clarifie le changement avec l'utilisateur, écrit la fiche du prompt, teste avant/après en conditions
+  réelles. C'est le foyer du craft de copy — edit-campaign y renvoie après avoir créé une clé d'étape.
 - **Dupliquer une verticale** vers un nouveau segment → pas encore construit. Le dire à l'utilisateur ;
   ne pas muter à la main.
 
@@ -79,5 +83,6 @@ référence : mieux vaut une de trop qu'une de moins.**
 | Run quotidien | `references/driven-outreach/run.md` |
 | Créer une campagne | skill `new-campaign` (+ sa réf `references/new-campaign/vertical-scaffold.md`) |
 | Modifier le ciblage / la séquence / la config | skill `edit-campaign` (séquence → `references/edit-campaign/sequence-edit.md` ; config → `references/edit-campaign/config-state.md`) |
+| Affûter / réécrire la copy d'un message | skill `craft-copy` (+ ses réfs `references/craft-copy/`) |
 
 Les skills chargent eux-mêmes leurs propres références ; le routeur n'a qu'à les déclencher.
